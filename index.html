@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Trixie Product Studio</title>
+  <title>Trixie Studio Layout</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -10,13 +10,19 @@
 
   <h1>🐾 Trixie Product Visualizer</h1>
 
-  <div class="upload-section">
+  <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*">
+    <label for="opacitySlider">Reflection opacity</label>
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.25">
     <button onclick="clearImages()">Clear</button>
     <button onclick="exportCanvas()">Download</button>
   </div>
 
-  <div id="previewArea" class="preview-container"></div>
+  <h2>🖼️ Raw Preview</h2>
+  <div id="rawPreview" class="preview-row"></div>
+
+  <h2>✨ Studio Layout</h2>
+  <div id="previewArea" class="preview-row"></div>
 
   <canvas id="exportCanvas" style="display: none;"></canvas>
 
