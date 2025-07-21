@@ -36,9 +36,11 @@ function handleUpload(event) {
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
       wrapper.style.backgroundImage = `url(${imageData})`;
 
-      const styledImg = document.createElement("img");
-      styledImg.src = imageData;
-      styledImg.alt = "Styled product";
+     const styledImg = document.createElement("img");
+styledImg.src = imageData;
+styledImg.alt = "Styled product";
+styledImg.style.border = "2px solid red";
+styledImg.style.width = "200px";
 
       wrapper.appendChild(styledImg);
       previewArea.appendChild(wrapper);
