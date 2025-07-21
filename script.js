@@ -1,6 +1,6 @@
 const uploadInput = document.getElementById("imageUpload");
 const previewArea = document.getElementById("previewArea");
-const exportCanvas = document.getElementById("exportCanvas");
+const canvasElement = document.getElementById("exportCanvas"); // <-- ændret navn her
 const opacitySlider = document.getElementById("opacitySlider");
 
 uploadInput.addEventListener("change", handleUpload);
@@ -42,7 +42,7 @@ function clearImages() {
 }
 
 function exportCanvas() {
-  const ctx = exportCanvas.getContext("2d");
+  const ctx = canvasElement.getContext("2d"); // <-- brugt det nye navn her
   const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
   if (!wrappers.length) return;
 
@@ -50,8 +50,8 @@ function exportCanvas() {
   const imageHeight = 200;
   const spacing = 30;
 
-  exportCanvas.width = wrappers.length * (imageWidth + spacing);
-  exportCanvas.height = imageHeight * 2.2;
+  canvasElement.width = wrappers.length * (imageWidth + spacing);
+  canvasElement.height = imageHeight * 2.2;
 
   wrappers.forEach((wrapper, index) => {
     const img = wrapper.querySelector("img");
@@ -68,6 +68,6 @@ function exportCanvas() {
 
   const link = document.createElement("a");
   link.download = "studio-layout.png";
-  link.href = exportCanvas.toDataURL("image/png");
+  link.href = canvasElement.toDataURL("image/png");
   link.click();
 }
