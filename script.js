@@ -19,26 +19,23 @@ function handleUpload(event) {
 
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
-      wrapper.draggable = true;
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
+      wrapper.style.left = "20px";
+      wrapper.style.top = `${20 + index * 320}px`;
 
       const img = document.createElement("img");
-     img.onload = () => {
-  const cleanImg = removeWhiteBackground(img);
-  wrapper.appendChild(cleanImg);
-};
-img.src = url;
+      img.src = url;
+
+      // Når billedet loader, sæt max bredde/højde for at kunne flytte
+      img.onload = () => {
+        // Hvis vil du kan justere størrelsen her, fx maks bredde 300px (stylet i CSS)
+      };
+
+      wrapper.appendChild(img);
       previewArea.appendChild(wrapper);
 
-      // Drag events
-      wrapper.addEventListener("dragstart", e => {
-        wrapper.classList.add("dragging");
-      });
-
-      wrapper.addEventListener("dragend", e => {
-        wrapper.classList.remove("dragging");
-      });
+      makeDraggable(wrapper);
     };
     reader.readAsDataURL(file);
   });
@@ -55,24 +52,63 @@ function clearImages() {
   previewArea.innerHTML = "";
 }
 
+// Gør elementet draggbart med mus (fri placering)
+function makeDraggable(el) {
+  let offsetX, offsetY;
+  let isDragging = false;
+
+  el.addEventListener("mousedown", e => {
+    isDragging = true;
+    const rect = el.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    el.style.cursor = "grabbing";
+  });
+
+  window.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    let x = e.clientX - offsetX;
+    let y = e.clientY - offsetY;
+
+    // Begræns indenfor previewArea
+    const containerRect = previewArea.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const maxX = containerRect.width - elRect.width;
+    const maxY = containerRect.height - elRect.height;
+
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x > maxX) x = maxX;
+    if (y > maxY) y = maxY;
+
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+  });
+
+  window.addEventListener("mouseup", e => {
+    if (isDragging) {
+      isDragging = false;
+      el.style.cursor = "move";
+    }
+  });
+}
+
 function exportLayout() {
   const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
   if (!wrappers.length) return;
 
-  const imageWidth = 200;
-  const imageHeight = 200;
-  const spacing = 30;
-
-  const size = canvasSizeSelect.value;
+  const opacity = parseFloat(opacitySlider.value);
   const fileFormat = fileFormatSelect.value;
+  const size = canvasSizeSelect.value;
 
-  let canvasWidth = wrappers.length * (imageWidth + spacing);
-  let canvasHeight = imageHeight * 2.2;
-
-  if (size !== "auto") {
-    const [w, h] = size.split("x").map(Number);
-    canvasWidth = w;
-    canvasHeight = h;
+  // Hvis auto, brug previewArea's størrelse, ellers bruger valgt størrelse
+  let canvasWidth, canvasHeight;
+  if (size === "auto") {
+    const rect = previewArea.getBoundingClientRect();
+    canvasWidth = rect.width;
+    canvasHeight = rect.height;
+  } else {
+    [canvasWidth, canvasHeight] = size.split("x").map(Number);
   }
 
   canvasElement.width = canvasWidth;
@@ -80,81 +116,49 @@ function exportLayout() {
 
   const ctx = canvasElement.getContext("2d");
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  ctx.imageSmoothingQuality = "high";
 
-  wrappers.forEach((wrapper, index) => {
+  const containerRect = previewArea.getBoundingClientRect();
+
+  wrappers.forEach(wrapper => {
     const img = wrapper.querySelector("img");
-    const x = index * (imageWidth + spacing);
-    const y = 0;
+    const wrapperRect = wrapper.getBoundingClientRect();
 
-    ctx.drawImage(img, x, y, imageWidth, imageHeight);
+    // Beregn position relativ til previewArea
+    const x = wrapperRect.left - containerRect.left;
+    const y = wrapperRect.top - containerRect.top;
 
+    // Brug original billede dimensioner
+    const width = img.naturalWidth;
+    const height = img.naturalHeight;
+
+    // For at skalere billedet så det passer med visuel størrelse:
+    // Find CSS skala: (wrapper clientWidth / img.naturalWidth)
+    // Eller simpel metode: brug wrapper clientWidth og højde for størrelsesforhold
+
+    const scaleX = wrapper.clientWidth / width;
+    const scaleY = wrapper.clientHeight / height;
+    const scale = Math.min(scaleX, scaleY);
+
+    const drawWidth = width * scale;
+    const drawHeight = height * scale;
+
+    // Tegn billedet
+    ctx.drawImage(img, x, y, drawWidth, drawHeight);
+
+    // Tegn refleksion
     ctx.save();
-    ctx.translate(x, imageHeight * 2);
+    ctx.translate(x, y + drawHeight * 2);
     ctx.scale(1, -1);
-    ctx.globalAlpha = parseFloat(opacitySlider.value);
-    ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
     ctx.restore();
   });
 
+  // Download canvas
+  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   const link = document.createElement("a");
   link.download = `studio-layout.${fileFormat}`;
-  link.href = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
+  link.href = dataUrl;
   link.click();
-}
-
-// Drag container logic
-previewArea.addEventListener("dragover", e => {
-  e.preventDefault();
-  const afterElement = getDragAfterElement(previewArea, e.clientX);
-  const dragging = document.querySelector(".dragging");
-  if (!dragging) return;
-  if (afterElement == null) {
-    previewArea.appendChild(dragging);
-  } else {
-    previewArea.insertBefore(dragging, afterElement);
-  }
-});
-
-function getDragAfterElement(container, x) {
-  const elements = [...container.querySelectorAll(".image-wrapper:not(.dragging)")];
-
-  return elements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const offset = x - box.left - box.width / 2;
-
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-function removeWhiteBackground(imgElement) {
-  const tempCanvas = document.createElement("canvas");
-  const ctx = tempCanvas.getContext("2d");
-
-  tempCanvas.width = imgElement.width;
-  tempCanvas.height = imgElement.height;
-
-  ctx.drawImage(imgElement, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-  const data = imageData.data;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i+1];
-    const b = data[i+2];
-
-    // Hvis pixel er næsten hvid (kan justeres)
-    if (r > 240 && g > 240 && b > 240) {
-      data[i+3] = 0; // Gør gennemsigtig
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-
-  const resultImg = new Image();
-  resultImg.src = tempCanvas.toDataURL("image/png");
-  return resultImg;
 }
