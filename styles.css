@@ -21,20 +21,23 @@ h1 {
   margin-right: 5px;
 }
 
+/* Gør previewArea stort og synligt */
 #previewArea {
   position: relative;
   border: 2px dashed #ccc;
-  background: transparent; /* Start med transparent baggrund */
-  min-height: 500px;
+  background: transparent;
+  width: 1200px;
+  height: 800px;
   overflow: hidden;
+  user-select: none;
 }
 
 .image-wrapper {
   position: absolute;
   cursor: grab;
   user-select: none;
+  width: 200px;
   transition: box-shadow 0.2s;
-  width: 200px; /* fast bredde */
 }
 
 .image-wrapper img {
