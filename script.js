@@ -13,15 +13,12 @@ function handleUpload(event) {
     reader.onload = e => {
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
+      wrapper.style.setProperty("--img-url", `url(${e.target.result})`);
       const img = document.createElement("img");
       img.src = e.target.result;
 
       wrapper.appendChild(img);
       previewArea.appendChild(wrapper);
-
-      // Prep reflection
-      wrapper.style.setProperty("--img-url", `url(${e.target.result})`);
-      wrapper.style.setProperty("background-image", `url(${e.target.result})`);
     };
     reader.readAsDataURL(file);
   });
