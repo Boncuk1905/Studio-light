@@ -1,5 +1,4 @@
 const uploadInput = document.getElementById("imageUpload");
-const rawPreview = document.getElementById("rawPreview");
 const previewArea = document.getElementById("previewArea");
 const exportCanvas = document.getElementById("exportCanvas");
 const opacitySlider = document.getElementById("opacitySlider");
@@ -8,58 +7,37 @@ uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
 
 function handleUpload(event) {
-  rawPreview.innerHTML = "";
   previewArea.innerHTML = "";
-
   const files = Array.from(event.target.files);
   if (!files.length) return;
 
   files.forEach(file => {
     const reader = new FileReader();
-
     reader.onload = e => {
-      const imageData = e.target.result;
+      const url = e.target.result;
 
-      // Raw preview image
-      const rawImg = document.createElement("img");
-      rawImg.src = imageData;
-      rawImg.alt = "Raw upload";
-      rawImg.style.width = "120px";
-      rawImg.style.margin = "8px";
-      rawImg.style.border = "1px solid #ccc";
-      rawPreview.appendChild(rawImg);
-
-      // Styled studio layout image
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
-      wrapper.style.setProperty("--img-url", `url(${imageData})`);
+      wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
-      wrapper.style.backgroundImage = `url(${imageData})`;
 
-     const styledImg = document.createElement("img");
-styledImg.src = imageData;
-styledImg.alt = "Styled product";
-styledImg.style.border = "2px solid red";
-styledImg.style.width = "200px";
-
-      wrapper.appendChild(styledImg);
+      const img = document.createElement("img");
+      img.src = url;
+      wrapper.appendChild(img);
       previewArea.appendChild(wrapper);
     };
-
     reader.readAsDataURL(file);
   });
 }
 
 function updateReflectionOpacity() {
-  const allWrappers = document.querySelectorAll(".image-wrapper");
-  allWrappers.forEach(wrapper => {
+  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
     wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
   });
 }
 
 function clearImages() {
   uploadInput.value = "";
-  rawPreview.innerHTML = "";
   previewArea.innerHTML = "";
 }
 
@@ -80,7 +58,6 @@ function exportCanvas() {
     const x = index * (imageWidth + spacing);
 
     ctx.drawImage(img, x, 0, imageWidth, imageHeight);
-
     ctx.save();
     ctx.translate(x, imageHeight * 2);
     ctx.scale(1, -1);
@@ -90,7 +67,7 @@ function exportCanvas() {
   });
 
   const link = document.createElement("a");
-  link.download = "trixie-layout.png";
+  link.download = "studio-layout.png";
   link.href = exportCanvas.toDataURL("image/png");
   link.click();
 }
