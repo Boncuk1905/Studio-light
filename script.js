@@ -5,14 +5,7 @@ const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
-
-// Guide-linjer
-const verticalGuide = document.createElement("div");
-verticalGuide.className = "guide-line vertical";
-const horizontalGuide = document.createElement("div");
-horizontalGuide.className = "guide-line horizontal";
-previewArea.appendChild(verticalGuide);
-previewArea.appendChild(horizontalGuide);
+const toggleGrid = document.getElementById("toggleGrid");
 
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
@@ -22,6 +15,7 @@ let dragData = {
   draggingEl: null,
   offsetX: 0,
   offsetY: 0,
+  isDragging: false
 };
 
 let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
@@ -31,8 +25,6 @@ function handleUpload(event) {
   if (!files.length) return;
 
   previewArea.innerHTML = "";
-  previewArea.appendChild(verticalGuide);
-  previewArea.appendChild(horizontalGuide);
 
   const columns = 4;
   const spacingX = 230;
@@ -48,7 +40,6 @@ function handleUpload(event) {
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
-      // Initial position i grid
       const col = index % columns;
       const row = Math.floor(index / columns);
 
@@ -58,8 +49,8 @@ function handleUpload(event) {
       const img = document.createElement("img");
       img.src = url;
 
+      // Når billedet loader, sæt højde så den passer med bredden og bevarer prop.
       img.onload = () => {
-        // Bevar proportioner ved at sætte højde efter bredde
         const ratio = img.naturalHeight / img.naturalWidth;
         wrapper.style.height = `${wrapper.clientWidth * ratio}px`;
         applyShadow(wrapper, lightAngleRad);
@@ -72,10 +63,6 @@ function handleUpload(event) {
     };
     reader.readAsDataURL(file);
   });
-
-  // Juster preview-area højde
-  const rows = Math.ceil(files.length / columns);
-  previewArea.style.height = `${rows * spacingY + 40}px`;
 }
 
 function updateReflectionOpacity() {
@@ -101,9 +88,6 @@ function applyShadow(wrapper, angleRad) {
 function clearImages() {
   uploadInput.value = "";
   previewArea.innerHTML = "";
-  previewArea.style.height = "auto";
-  previewArea.appendChild(verticalGuide);
-  previewArea.appendChild(horizontalGuide);
 }
 
 function makeDraggable(el) {
@@ -112,90 +96,38 @@ function makeDraggable(el) {
   el.addEventListener("mousedown", e => {
     e.preventDefault();
     dragData.draggingEl = el;
-
-    const rect = el.getBoundingClientRect();
-    const containerRect = previewArea.getBoundingClientRect();
-
-    dragData.offsetX = e.clientX - rect.left;
-    dragData.offsetY = e.clientY - rect.top;
-
+    dragData.offsetX = e.clientX - el.getBoundingClientRect().left;
+    dragData.offsetY = e.clientY - el.getBoundingClientRect().top;
+    dragData.isDragging = true;
     el.style.zIndex = 1000;
   });
 
-  el.addEventListener("mouseup", e => {
-    dragData.draggingEl = null;
-    el.style.zIndex = 1;
-    hideGuides();
+  window.addEventListener("mousemove", e => {
+    if (!dragData.isDragging || !dragData.draggingEl) return;
+
+    const containerRect = previewArea.getBoundingClientRect();
+    const el = dragData.draggingEl;
+    const elRect = el.getBoundingClientRect();
+
+    let x = e.clientX - containerRect.left - dragData.offsetX;
+    let y = e.clientY - containerRect.top - dragData.offsetY;
+
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+    if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
+    if (y + elRect.height > containerRect.height) y = containerRect.height - elRect.height;
+
+    el.style.left = x + "px";
+    el.style.top = y + "px";
   });
-}
 
-window.addEventListener("mousemove", e => {
-  if (!dragData.draggingEl) return;
-
-  const containerRect = previewArea.getBoundingClientRect();
-  const el = dragData.draggingEl;
-  const elRect = el.getBoundingClientRect();
-
-  let x = e.clientX - containerRect.left - dragData.offsetX;
-  let y = e.clientY - containerRect.top - dragData.offsetY;
-
-  // Begræns så det ikke går uden for previewArea
-  x = Math.max(0, Math.min(x, containerRect.width - elRect.width));
-  y = Math.max(0, Math.min(y, containerRect.height - elRect.height));
-
-  // Snap til grid i Y-retning (sammenlign med andre billeder)
-  const snapThreshold = 15;
-  let snappedY = y;
-  let showHorizontal = false;
-
-  document.querySelectorAll(".image-wrapper").forEach(other => {
-    if (other === el) return;
-    const oy = other.offsetTop;
-    if (Math.abs(y - oy) < snapThreshold) {
-      snappedY = oy;
-      showHorizontal = true;
+  window.addEventListener("mouseup", e => {
+    if (dragData.isDragging && dragData.draggingEl) {
+      dragData.draggingEl.style.zIndex = 1;
     }
+    dragData.isDragging = false;
+    dragData.draggingEl = null;
   });
-
-  y = snappedY;
-
-  // Snap til midten i X-retning
-  const centerX = containerRect.width / 2 - elRect.width / 2;
-  let showVertical = false;
-  if (Math.abs(x - centerX) < snapThreshold) {
-    x = centerX;
-    showVertical = true;
-  }
-
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-
-  // Vis guide-linjer kun ved snap
-  if (showVertical) {
-    verticalGuide.style.left = `${centerX}px`;
-    verticalGuide.style.display = "block";
-  } else {
-    verticalGuide.style.display = "none";
-  }
-  if (showHorizontal) {
-    horizontalGuide.style.top = `${y}px`;
-    horizontalGuide.style.display = "block";
-  } else {
-    horizontalGuide.style.display = "none";
-  }
-});
-
-window.addEventListener("mouseup", () => {
-  if (dragData.draggingEl) {
-    dragData.draggingEl.style.zIndex = 1;
-  }
-  dragData.draggingEl = null;
-  hideGuides();
-});
-
-function hideGuides() {
-  verticalGuide.style.display = "none";
-  horizontalGuide.style.display = "none";
 }
 
 function exportLayout() {
@@ -224,8 +156,8 @@ function exportLayout() {
 
   const containerRect = previewArea.getBoundingClientRect();
 
-  // Tegn hvid baggrund
-  ctx.fillStyle = "white";
+  // Hvid baggrund i eksport
+  ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   wrappers.forEach(wrapper => {
@@ -241,21 +173,21 @@ function exportLayout() {
     const displayedWidth = wrapperRect.width * xRatio;
     const displayedHeight = wrapperRect.height * yRatio;
 
-    // Tegn hovedbillede
+    // Tegn billede
     ctx.drawImage(img, x, y, displayedWidth, displayedHeight);
 
-    // Tegn refleksion (spejling)
+    // Tegn refleksion (flip lodret)
     ctx.save();
+    ctx.globalAlpha = opacity;
     ctx.translate(x, y + displayedHeight * 2);
     ctx.scale(1, -1);
-    ctx.globalAlpha = opacity;
     ctx.drawImage(img, 0, 0, displayedWidth, displayedHeight);
     ctx.restore();
   });
 
-  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
+  const dataURL = canvasElement.toDataURL(`image/${fileFormat}`);
   const link = document.createElement("a");
-  link.download = `studio-layout.${fileFormat}`;
-  link.href = dataUrl;
+  link.download = `layout.${fileFormat}`;
+  link.href = dataURL;
   link.click();
 }
