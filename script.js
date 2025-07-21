@@ -1,4 +1,6 @@
 document.getElementById("imageUpload").addEventListener("change", function (e) {
+  alert("Script is running!"); // Should pop up when images selected
+
   const previewArea = document.getElementById("previewArea");
   previewArea.innerHTML = "";
 
