@@ -1,23 +1,25 @@
 const uploadInput = document.getElementById("imageUpload");
 const previewArea = document.getElementById("previewArea");
-const canvasElement = document.getElementById("exportCanvas"); // <-- ændret navn her
+const canvasElement = document.getElementById("exportCanvas");
 const opacitySlider = document.getElementById("opacitySlider");
+const canvasSizeSelect = document.getElementById("canvasSize");
+const fileFormatSelect = document.getElementById("fileFormat");
 
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
 
 function handleUpload(event) {
-  previewArea.innerHTML = "";
   const files = Array.from(event.target.files);
   if (!files.length) return;
 
-  files.forEach(file => {
+  files.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = e => {
       const url = e.target.result;
 
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
+      wrapper.draggable = true;
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
@@ -25,6 +27,15 @@ function handleUpload(event) {
       img.src = url;
       wrapper.appendChild(img);
       previewArea.appendChild(wrapper);
+
+      // Drag events
+      wrapper.addEventListener("dragstart", e => {
+        wrapper.classList.add("dragging");
+      });
+
+      wrapper.addEventListener("dragend", e => {
+        wrapper.classList.remove("dragging");
+      });
     };
     reader.readAsDataURL(file);
   });
@@ -41,8 +52,7 @@ function clearImages() {
   previewArea.innerHTML = "";
 }
 
-function exportCanvas() {
-  const ctx = canvasElement.getContext("2d"); // <-- brugt det nye navn her
+function exportLayout() {
   const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
   if (!wrappers.length) return;
 
@@ -50,14 +60,31 @@ function exportCanvas() {
   const imageHeight = 200;
   const spacing = 30;
 
-  canvasElement.width = wrappers.length * (imageWidth + spacing);
-  canvasElement.height = imageHeight * 2.2;
+  const size = canvasSizeSelect.value;
+  const fileFormat = fileFormatSelect.value;
+
+  let canvasWidth = wrappers.length * (imageWidth + spacing);
+  let canvasHeight = imageHeight * 2.2;
+
+  if (size !== "auto") {
+    const [w, h] = size.split("x").map(Number);
+    canvasWidth = w;
+    canvasHeight = h;
+  }
+
+  canvasElement.width = canvasWidth;
+  canvasElement.height = canvasHeight;
+
+  const ctx = canvasElement.getContext("2d");
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   wrappers.forEach((wrapper, index) => {
     const img = wrapper.querySelector("img");
     const x = index * (imageWidth + spacing);
+    const y = 0;
 
-    ctx.drawImage(img, x, 0, imageWidth, imageHeight);
+    ctx.drawImage(img, x, y, imageWidth, imageHeight);
+
     ctx.save();
     ctx.translate(x, imageHeight * 2);
     ctx.scale(1, -1);
@@ -67,7 +94,35 @@ function exportCanvas() {
   });
 
   const link = document.createElement("a");
-  link.download = "studio-layout.png";
-  link.href = canvasElement.toDataURL("image/png");
+  link.download = `studio-layout.${fileFormat}`;
+  link.href = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   link.click();
+}
+
+// Drag container logic
+previewArea.addEventListener("dragover", e => {
+  e.preventDefault();
+  const afterElement = getDragAfterElement(previewArea, e.clientX);
+  const dragging = document.querySelector(".dragging");
+  if (!dragging) return;
+  if (afterElement == null) {
+    previewArea.appendChild(dragging);
+  } else {
+    previewArea.insertBefore(dragging, afterElement);
+  }
+});
+
+function getDragAfterElement(container, x) {
+  const elements = [...container.querySelectorAll(".image-wrapper:not(.dragging)")];
+
+  return elements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = x - box.left - box.width / 2;
+
+    if (offset < 0 && offset > closest.offset) {
+      return { offset: offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
