@@ -126,3 +126,32 @@ function getDragAfterElement(container, x) {
     }
   }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
+function removeWhiteBackground(imgElement) {
+  const tempCanvas = document.createElement("canvas");
+  const ctx = tempCanvas.getContext("2d");
+
+  tempCanvas.width = imgElement.width;
+  tempCanvas.height = imgElement.height;
+
+  ctx.drawImage(imgElement, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i+1];
+    const b = data[i+2];
+
+    // Hvis pixel er næsten hvid (kan justeres)
+    if (r > 240 && g > 240 && b > 240) {
+      data[i+3] = 0; // Gør gennemsigtig
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+
+  const resultImg = new Image();
+  resultImg.src = tempCanvas.toDataURL("image/png");
+  return resultImg;
+}
