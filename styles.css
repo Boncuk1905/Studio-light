@@ -48,6 +48,12 @@ button {
   width: 100%;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
   border-radius: 10px;
+  border: 2px solid #0078D4;
+  transition: transform 0.3s ease;
+}
+
+.image-wrapper:hover img {
+  transform: scale(1.05);
 }
 
 .image-wrapper::after {
@@ -60,6 +66,7 @@ button {
   transform: scaleY(-1);
   background-repeat: no-repeat;
   background-size: contain;
+  background-image: var(--img-url);
   opacity: 0.2;
   filter: blur(2px);
   pointer-events: none;
