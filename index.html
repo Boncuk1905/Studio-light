@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Trixie Preview Studio</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
@@ -11,16 +11,31 @@
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*">
+    
     <label for="opacitySlider">Reflection Opacity</label>
     <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
+    
+    <label for="canvasSize">Canvas Size</label>
+    <select id="canvasSize">
+      <option value="1280x1280">1280x1280</option>
+      <option value="1920x1080">1920x1080</option>
+      <option value="auto">Auto (fit all)</option>
+    </select>
+
+    <label for="fileFormat">File Format</label>
+    <select id="fileFormat">
+      <option value="webp">WEBP</option>
+      <option value="png">PNG</option>
+    </select>
+
     <button onclick="clearImages()">Clear</button>
-    <button onclick="exportCanvas()">Download</button>
+    <button onclick="exportLayout()">Download</button>
   </div>
 
   <div id="previewArea" class="preview-container"></div>
 
   <canvas id="exportCanvas" style="display: none;"></canvas>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
