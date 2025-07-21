@@ -8,6 +8,12 @@ const fileFormatSelect = document.getElementById("fileFormat");
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
 
+let dragData = {
+  draggingEl: null,
+  offsetX: 0,
+  offsetY: 0,
+};
+
 function handleUpload(event) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
@@ -21,16 +27,13 @@ function handleUpload(event) {
       wrapper.className = "image-wrapper";
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
+
+      // Sæt startposition (frit placeret)
       wrapper.style.left = "20px";
       wrapper.style.top = `${20 + index * 320}px`;
 
       const img = document.createElement("img");
       img.src = url;
-
-      // Når billedet loader, sæt max bredde/højde for at kunne flytte
-      img.onload = () => {
-        // Hvis vil du kan justere størrelsen her, fx maks bredde 300px (stylet i CSS)
-      };
 
       wrapper.appendChild(img);
       previewArea.appendChild(wrapper);
@@ -52,46 +55,51 @@ function clearImages() {
   previewArea.innerHTML = "";
 }
 
-// Gør elementet draggbart med mus (fri placering)
+// Forbedret drag & drop, kun ét element kan flyttes ad gangen
 function makeDraggable(el) {
-  let offsetX, offsetY;
-  let isDragging = false;
+  el.style.position = "absolute";
 
   el.addEventListener("mousedown", e => {
-    isDragging = true;
+    e.preventDefault(); // Forhindrer tekst-markering osv.
+
+    dragData.draggingEl = el;
+
+    // Beregn offset mellem mus og elementets øverste venstre hjørne
     const rect = el.getBoundingClientRect();
-    offsetX = e.clientX - rect.left;
-    offsetY = e.clientY - rect.top;
-    el.style.cursor = "grabbing";
-  });
+    dragData.offsetX = e.clientX - rect.left;
+    dragData.offsetY = e.clientY - rect.top;
 
-  window.addEventListener("mousemove", e => {
-    if (!isDragging) return;
-    let x = e.clientX - offsetX;
-    let y = e.clientY - offsetY;
-
-    // Begræns indenfor previewArea
-    const containerRect = previewArea.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    const maxX = containerRect.width - elRect.width;
-    const maxY = containerRect.height - elRect.height;
-
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (x > maxX) x = maxX;
-    if (y > maxY) y = maxY;
-
-    el.style.left = x + "px";
-    el.style.top = y + "px";
-  });
-
-  window.addEventListener("mouseup", e => {
-    if (isDragging) {
-      isDragging = false;
-      el.style.cursor = "move";
-    }
+    // Forbedring: bring element til front, så det ikke bliver "overdækket"
+    el.style.zIndex = 1000;
   });
 }
+
+window.addEventListener("mousemove", e => {
+  if (!dragData.draggingEl) return;
+
+  const containerRect = previewArea.getBoundingClientRect();
+  const el = dragData.draggingEl;
+  const elRect = el.getBoundingClientRect();
+
+  let x = e.clientX - containerRect.left - dragData.offsetX;
+  let y = e.clientY - containerRect.top - dragData.offsetY;
+
+  // Begræns inden for previewArea
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
+  if (y + elRect.height > containerRect.height) y = containerRect.height - elRect.height;
+
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+});
+
+window.addEventListener("mouseup", e => {
+  if (dragData.draggingEl) {
+    dragData.draggingEl.style.zIndex = 1; // Sæt z-index tilbage
+  }
+  dragData.draggingEl = null;
+});
 
 function exportLayout() {
   const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
@@ -101,7 +109,7 @@ function exportLayout() {
   const fileFormat = fileFormatSelect.value;
   const size = canvasSizeSelect.value;
 
-  // Hvis auto, brug previewArea's størrelse, ellers bruger valgt størrelse
+  // Canvas dimensioner
   let canvasWidth, canvasHeight;
   if (size === "auto") {
     const rect = previewArea.getBoundingClientRect();
@@ -124,34 +132,29 @@ function exportLayout() {
     const img = wrapper.querySelector("img");
     const wrapperRect = wrapper.getBoundingClientRect();
 
-    // Beregn position relativ til previewArea
+    // Beregn position relativt til previewArea
     const x = wrapperRect.left - containerRect.left;
     const y = wrapperRect.top - containerRect.top;
 
-    // Brug original billede dimensioner
-    const width = img.naturalWidth;
-    const height = img.naturalHeight;
+    // Her bruger vi *kun* den skalerede bredde (wrapper.clientWidth)
+    // For højde beregnes ud fra proportionen af billedet, så det ikke bliver squished
 
-    // For at skalere billedet så det passer med visuel størrelse:
-    // Find CSS skala: (wrapper clientWidth / img.naturalWidth)
-    // Eller simpel metode: brug wrapper clientWidth og højde for størrelsesforhold
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
 
-    const scaleX = wrapper.clientWidth / width;
-    const scaleY = wrapper.clientHeight / height;
-    const scale = Math.min(scaleX, scaleY);
+    const displayedWidth = wrapper.clientWidth;
+    // Beregn højde med samme proportion
+    const displayedHeight = naturalHeight * (displayedWidth / naturalWidth);
 
-    const drawWidth = width * scale;
-    const drawHeight = height * scale;
-
-    // Tegn billedet
-    ctx.drawImage(img, x, y, drawWidth, drawHeight);
+    // Tegn billede med korrekt proportion
+    ctx.drawImage(img, x, y, displayedWidth, displayedHeight);
 
     // Tegn refleksion
     ctx.save();
-    ctx.translate(x, y + drawHeight * 2);
+    ctx.translate(x, y + displayedHeight * 2);
     ctx.scale(1, -1);
     ctx.globalAlpha = opacity;
-    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+    ctx.drawImage(img, 0, 0, displayedWidth, displayedHeight);
     ctx.restore();
   });
 
