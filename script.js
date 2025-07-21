@@ -29,9 +29,9 @@ function handleUpload(event) {
 
   previewArea.innerHTML = "";
 
-  const columns = 4; // antal billeder per række
   const spacingX = 230;
   const spacingY = 320;
+  const columns = Math.floor(previewArea.clientWidth / spacingX);
 
   files.forEach((file, index) => {
     const reader = new FileReader();
@@ -46,7 +46,6 @@ function handleUpload(event) {
       const col = index % columns;
       const row = Math.floor(index / columns);
 
-      wrapper.style.position = "absolute";
       wrapper.style.left = `${20 + col * spacingX}px`;
       wrapper.style.top = `${20 + row * spacingY}px`;
 
@@ -55,7 +54,6 @@ function handleUpload(event) {
 
       img.onload = () => {
         const ratio = img.naturalHeight / img.naturalWidth;
-        wrapper.style.width = "200px"; // fast bredde
         wrapper.style.height = `${200 * ratio}px`;
         applyShadow(wrapper, lightAngleRad);
       };
@@ -67,10 +65,6 @@ function handleUpload(event) {
     };
     reader.readAsDataURL(file);
   });
-
-  // Juster preview-area højde
-  const rows = Math.ceil(files.length / columns);
-  previewArea.style.height = `${rows * spacingY + 40}px`;
 }
 
 function updateReflectionOpacity() {
@@ -97,7 +91,6 @@ function applyShadow(wrapper, angleRad) {
 function clearImages() {
   uploadInput.value = "";
   previewArea.innerHTML = "";
-  previewArea.style.height = "auto";
 }
 
 function checkSnapLines(movingEl) {
@@ -112,65 +105,94 @@ function checkSnapLines(movingEl) {
   guideLineVertical.style.display = "none";
   guideLineHorizontal.style.display = "none";
 
-  const movingRect = movingEl.getBoundingClientRect();
   const containerRect = previewArea.getBoundingClientRect();
+  const movingRect = movingEl.getBoundingClientRect();
 
-  const wrappers = Array.from(document.querySelectorAll(".image-wrapper")).filter(w => w !== movingEl);
+  // Beregn snap-punkter for det flyttede element
+  const movingPointsX = [
+    movingRect.left,
+    movingRect.left + movingRect.width / 2,
+    movingRect.left + movingRect.width,
+  ];
+  const movingPointsY = [
+    movingRect.top,
+    movingRect.top + movingRect.height / 2,
+    movingRect.top + movingRect.height,
+  ];
 
   let snapX = null;
   let snapY = null;
+  let snapXValue = null; // coordinate to snap to inside previewArea
+  let snapYValue = null;
 
-  wrappers.forEach(w => {
-    const r = w.getBoundingClientRect();
+  // Saml alle snap-punkter fra de andre elementer
+  const others = Array.from(document.querySelectorAll(".image-wrapper")).filter(el => el !== movingEl);
 
-    // Horisontale snap-punkter: venstre, midte, højre
-    const pointsMovingX = [
-      movingRect.left,
-      movingRect.left + movingRect.width / 2,
-      movingRect.left + movingRect.width,
-    ];
-    const pointsOtherX = [
-      r.left,
-      r.left + r.width / 2,
-      r.left + r.width,
-    ];
+  const otherPointsX = [];
+  const otherPointsY = [];
 
-    pointsMovingX.forEach(px => {
-      pointsOtherX.forEach(pxOther => {
-        if (Math.abs(px - pxOther) <= SNAP_DISTANCE) {
-          snapX = pxOther - containerRect.left;
-        }
-      });
-    });
-
-    // Vertikale snap-punkter: top, midte, bund
-    const pointsMovingY = [
-      movingRect.top,
-      movingRect.top + movingRect.height / 2,
-      movingRect.top + movingRect.height,
-    ];
-    const pointsOtherY = [
-      r.top,
-      r.top + r.height / 2,
-      r.top + r.height,
-    ];
-
-    pointsMovingY.forEach(py => {
-      pointsOtherY.forEach(pyOther => {
-        if (Math.abs(py - pyOther) <= SNAP_DISTANCE) {
-          snapY = pyOther - containerRect.top;
-        }
-      });
-    });
+  others.forEach(el => {
+    const r = el.getBoundingClientRect();
+    otherPointsX.push(r.left, r.left + r.width / 2, r.left + r.width);
+    otherPointsY.push(r.top, r.top + r.height / 2, r.top + r.height);
   });
 
-  if (snapX !== null) {
-    guideLineVertical.style.left = snapX + "px";
-    guideLineVertical.style.display = "block";
+  // Snap X
+  for (const px of movingPointsX) {
+    for (const ox of otherPointsX) {
+      if (Math.abs(px - ox) <= SNAP_DISTANCE) {
+        snapX = px;
+        snapXValue = ox - containerRect.left;
+        break;
+      }
+    }
+    if (snapX !== null) break;
   }
-  if (snapY !== null) {
-    guideLineHorizontal.style.top = snapY + "px";
+
+  // Snap Y
+  for (const py of movingPointsY) {
+    for (const oy of otherPointsY) {
+      if (Math.abs(py - oy) <= SNAP_DISTANCE) {
+        snapY = py;
+        snapYValue = oy - containerRect.top;
+        break;
+      }
+    }
+    if (snapY !== null) break;
+  }
+
+  // Hvis vi skal snappe, sæt position på movingEl + vis guide linjer
+  if (snapXValue !== null) {
+    // Beregn forskydning mellem hvilket punkt vi snapper fra og til
+    // Find index i movingPointsX for snapX, og brug samme index til placering
+    let index = movingPointsX.indexOf(snapX);
+    let newLeft = snapXValue - (index === 0 ? 0 : index === 1 ? movingRect.width / 2 : movingRect.width);
+
+    // Sørg for at det ikke går udenfor previewArea
+    if (newLeft < 0) newLeft = 0;
+    if (newLeft + movingRect.width > containerRect.width) newLeft = containerRect.width - movingRect.width;
+
+    movingEl.style.left = newLeft + "px";
+
+    guideLineVertical.style.left = snapXValue + "px";
+    guideLineVertical.style.display = "block";
+  } else {
+    guideLineVertical.style.display = "none";
+  }
+
+  if (snapYValue !== null) {
+    let index = movingPointsY.indexOf(snapY);
+    let newTop = snapYValue - (index === 0 ? 0 : index === 1 ? movingRect.height / 2 : movingRect.height);
+
+    if (newTop < 0) newTop = 0;
+    if (newTop + movingRect.height > containerRect.height) newTop = containerRect.height - movingRect.height;
+
+    movingEl.style.top = newTop + "px";
+
+    guideLineHorizontal.style.top = snapYValue + "px";
     guideLineHorizontal.style.display = "block";
+  } else {
+    guideLineHorizontal.style.display = "none";
   }
 }
 
@@ -197,6 +219,7 @@ window.addEventListener("mousemove", e => {
   let x = e.clientX - containerRect.left - dragData.offsetX;
   let y = e.clientY - containerRect.top - dragData.offsetY;
 
+  // Begræns indenfor previewArea
   if (x < 0) x = 0;
   if (y < 0) y = 0;
   if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
