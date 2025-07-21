@@ -15,9 +15,6 @@ let lightRad = lightSlider.value * Math.PI/180;
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflect);
 lightSlider.addEventListener("input", updateShadows);
-toggleGrid.addEventListener("change", ()=> {
-  previewArea.classList.toggle("no-grid", !toggleGrid.checked);
-});
 
 function handleUpload(e) {
   previewArea.innerHTML = "";
@@ -43,17 +40,20 @@ function handleUpload(e) {
       URL.revokeObjectURL(url);
     };
   });
+
+  // lave guide-linjer
+  addGuides();
 }
 
 function updateReflect(){
-  [...document.querySelectorAll(".image-wrapper")].forEach(w=>{
+  document.querySelectorAll(".image-wrapper").forEach(w=>{
     w.style.setProperty("--reflection-opacity", opacitySlider.value);
   });
 }
 
 function updateShadows(){
   lightRad = lightSlider.value * Math.PI/180;
-  [...document.querySelectorAll(".image-wrapper")].forEach(w=>{
+  document.querySelectorAll(".image-wrapper").forEach(w=>{
     const d = 8, x = Math.cos(lightRad)*d, y = Math.sin(lightRad)*d;
     w.style.filter = `drop-shadow(${x}px ${y}px 8px rgba(0,0,0,0.15))`;
   });
@@ -85,6 +85,30 @@ window.addEventListener("mouseup", ()=>{
   dragEl=null;
 });
 
+toggleGrid.addEventListener("change", ()=>{
+  const lines = document.querySelectorAll(".guide-line");
+  lines.forEach(l => l.style.display = toggleGrid.checked ? "block" : "none");
+});
+
+function addGuides(){
+  document.querySelectorAll(".guide-line").forEach(l=>l.remove());
+  const pr = previewArea.getBoundingClientRect();
+  const hLine = document.createElement("div");
+  hLine.className = "guide-line";
+  hLine.style.top = pr.height/2 + "px";
+  hLine.style.left="0";
+  hLine.style.width = pr.width + "px";
+  hLine.style.height = "1px";
+  previewArea.appendChild(hLine);
+  const vLine = document.createElement("div");
+  vLine.className = "guide-line";
+  vLine.style.left = pr.width/2 + "px";
+  vLine.style.top="0";
+  vLine.style.width = "1px";
+  vLine.style.height = pr.height + "px";
+  previewArea.appendChild(vLine);
+}
+
 function clearImages(){
   previewArea.innerHTML="";
 }
@@ -92,7 +116,6 @@ function clearImages(){
 function exportLayout(){
   const items=[...document.querySelectorAll(".image-wrapper")];
   if(!items.length) return;
-
   let cw,ch;
   if(sizeSel.value=="auto"){
     const r=previewArea.getBoundingClientRect();
@@ -101,20 +124,18 @@ function exportLayout(){
 
   canvas.width=cw; canvas.height=ch;
   const cx=canvas.getContext("2d");
-  cx.fillStyle=bgPicker.value;
+  cx.fillStyle = bgPicker.value;
   cx.fillRect(0,0,cw,ch);
   cx.imageSmoothingQuality="high";
 
-  const pr=previewArea.getBoundingClientRect();
-
+  const pr = previewArea.getBoundingClientRect();
   items.forEach(w=>{
     const img=w.querySelector("img");
     const r=w.getBoundingClientRect();
     const sx=cw/pr.width, sy=ch/pr.height;
     const px=(r.left-pr.left)*sx, py=(r.top-pr.top)*sy;
     const pw=r.width*sx, ph=r.height*sy;
-
-    const gh=ph*0.1;
+    const gh = ph*0.1;
     const grad=cx.createLinearGradient(px,py+ph,px,py+ph+gh);
     grad.addColorStop(0,"rgba(255,255,255,0.4)");
     grad.addColorStop(1,"rgba(255,255,255,0)");
@@ -122,20 +143,18 @@ function exportLayout(){
     cx.filter="blur(8px)";
     cx.fillRect(px,py+ph-gh/2,pw,gh);
     cx.filter="none";
-
     cx.drawImage(img,px,py,pw,ph);
-
     cx.save();
     cx.translate(px,py+ph*2);
     cx.scale(1,-1);
-    cx.globalAlpha=parseFloat(opacitySlider.value);
+    cx.globalAlpha = parseFloat(opacitySlider.value);
     cx.drawImage(img,0,0,pw,ph);
     cx.restore();
     cx.globalAlpha=1;
   });
 
-  const link=document.createElement("a");
-  link.href=canvas.toDataURL(`image/${fmtSel.value}`,1);
-  link.download="layout."+fmtSel.value;
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL(`image/${fmtSel.value}`,1.0);
+  link.download = `layout.${fmtSel.value}`;
   link.click();
 }
