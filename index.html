@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trixie Studio Layout</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Trixie Product Visualizer</h1>
+
+  <div class="upload-section">
+    <input type="file" id="imageUpload" multiple accept="image/*">
+    <button onclick="clearImages()">Clear</button>
+    <button onclick="exportCanvas()">Download</button>
+  </div>
+
+  <div id="previewArea" class="preview-container"></div>
+
+  <canvas id="exportCanvas" style="display:none;"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
