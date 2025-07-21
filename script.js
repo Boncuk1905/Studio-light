@@ -122,7 +122,6 @@ function exportLayout() {
   const fileFormat = fileFormatSelect.value;
   const size = canvasSizeSelect.value;
 
-  // Canvas dimensioner
   let canvasWidth, canvasHeight;
   if (size === "auto") {
     const rect = previewArea.getBoundingClientRect();
@@ -137,36 +136,77 @@ function exportLayout() {
 
   const ctx = canvasElement.getContext("2d");
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  ctx.imageSmoothingQuality = "high";
+
+  // Hvid baggrund
+  ctx.fillStyle = "white";
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   const containerRect = previewArea.getBoundingClientRect();
 
+  // Find samlet bounding box for alle billeder
+  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+  wrappers.forEach(wrapper => {
+    const r = wrapper.getBoundingClientRect();
+    if (r.left < minX) minX = r.left;
+    if (r.top < minY) minY = r.top;
+    if (r.right > maxX) maxX = r.right;
+    if (r.bottom > maxY) maxY = r.bottom;
+  });
+
+  // Bredde/højde af alle billeder samlet
+  const totalWidth = maxX - minX;
+  const totalHeight = maxY - minY;
+
+  // Skaleringsfaktor så de samlet passer i canvas (med lidt margin)
+  const margin = 40;
+  const scaleX = (canvasWidth - margin * 2) / totalWidth;
+  const scaleY = (canvasHeight - margin * 2) / totalHeight;
+  const scale = Math.min(scaleX, scaleY, 1);
+
+  // Center offset i canvas
+  const offsetX = (canvasWidth - totalWidth * scale) / 2;
+  const offsetY = (canvasHeight - totalHeight * scale) / 2;
+
   wrappers.forEach(wrapper => {
     const img = wrapper.querySelector("img");
-    const wrapperRect = wrapper.getBoundingClientRect();
+    const r = wrapper.getBoundingClientRect();
 
-    const x = wrapperRect.left - containerRect.left;
-    const y = wrapperRect.top - containerRect.top;
+    // Position relativ til previewArea
+    const relX = r.left - minX;
+    const relY = r.top - minY;
 
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
+    const drawX = offsetX + relX * scale;
+    const drawY = offsetY + relY * scale;
+    const drawWidth = r.width * scale;
+    const drawHeight = r.height * scale;
 
-    // Beregn højde så proportioner bevares (bredde er wrapper.clientWidth)
-    const displayedWidth = wrapper.clientWidth;
-    const displayedHeight = naturalHeight * (displayedWidth / naturalWidth);
+    // Tegn "glasplade" - semi-transparent hvid med blur under billedet
+    const glassHeight = drawHeight * 0.2;
+    const gradient = ctx.createLinearGradient(drawX, drawY + drawHeight, drawX, drawY + drawHeight + glassHeight);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.3)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient;
+    ctx.shadowColor = "rgba(255,255,255,0.4)";
+    ctx.shadowBlur = 15;
+    ctx.fillRect(drawX, drawY + drawHeight - glassHeight / 2, drawWidth, glassHeight);
 
-    ctx.drawImage(img, x, y, displayedWidth, displayedHeight);
+    // Fjern skygge til resten af tegninger
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
 
-    // Refleksion
+    // Tegn hovedbillede
+    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+    // Tegn refleksion
     ctx.save();
-    ctx.translate(x, y + displayedHeight * 2);
+    ctx.translate(drawX, drawY + drawHeight * 2);
     ctx.scale(1, -1);
     ctx.globalAlpha = opacity;
-    ctx.drawImage(img, 0, 0, displayedWidth, displayedHeight);
+    ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
     ctx.restore();
   });
 
-  // Download canvas
+  // Download
   const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   const link = document.createElement("a");
   link.download = `studio-layout.${fileFormat}`;
