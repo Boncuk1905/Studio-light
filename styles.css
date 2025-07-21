@@ -5,33 +5,79 @@ body {
   user-select: none;
 }
 .controls {
-  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: center; margin-bottom: 15px;
 }
 #previewArea {
-  position: relative; margin: 0 auto; width: 100%; max-width: 1280px;
-  min-height: 500px; border: 1px solid #ccc;
-  background: #fff; overflow: auto;
+  position: relative;
+  margin: 0 auto;
+  width: 90%; max-width: 1280px;
+  min-height: 500px;
+  border: 1px solid #ccc;
+  background: #fff;
+  overflow: auto;
+}
+#previewArea::before,
+#previewArea::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+#previewArea::before {
+  width: 1px;
+  height: 100%;
+  background: rgba(0,0,0,0.1);
+  left: 50%;
+  transform: translateX(-50%);
+}
+#previewArea::after {
+  width: 100%;
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+  top: 50%;
+  transform: translateY(-50%);
+}
+#previewArea.no-grid::before,
+#previewArea.no-grid::after {
+  display: none;
 }
 .image-wrapper {
-  position: absolute; width: 200px; cursor: grab;
-  user-select: none; touch-action: none;
+  position: absolute;
+  width: 200px;
+  cursor: grab;
 }
-.image-wrapper:active { cursor: grabbing; z-index: 99; }
+.image-wrapper:active {
+  cursor: grabbing;
+  box-shadow: 0 0 10px rgba(0,150,255,0.5);
+  z-index: 99;
+}
 .image-wrapper::before {
-  content:''; position:absolute; bottom:5px;
-  left:5%; width:90%; height:10%;
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 5%;
+  width: 90%;
+  height: 10%;
   background: rgba(255,255,255,0.3);
   border-radius: 50% / 100%;
-  filter: blur(8px); pointer-events:none; z-index:0;
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: 0;
 }
 .image-wrapper img {
-  width:100%; display:block;
-  border-radius: 8px; background:#fff;
-  position:relative; z-index:2; object-fit: contain;
+  width: 100%;
+  display: block;
+  border-radius: 8px;
+  background: white;
+  position: relative;
+  z-index: 2;
+  object-fit: contain;
 }
 .image-wrapper::after {
   content:'';
-  position:absolute; top:100%; left:0;
+  position: absolute;
+  top:100%; left:0;
   width:100%; height:100%;
   background-image: var(--img-url);
   background-repeat: no-repeat;
@@ -39,102 +85,9 @@ body {
   transform: scaleY(-1);
   opacity: var(--reflection-opacity,0.25);
   filter: blur(2px);
-  z-index:1; pointer-events:none;
+  z-index:1;
+  pointer-events:none;
 }
-body {
-  font-family: 'Segoe UI', sans-serif;
-  padding: 20px;
-  text-align: center;
-  background-color: #fafafa;
-  user-select: none;
-  margin: 0;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.controls {
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  align-items: center;
-}
-
-#previewArea {
-  position: relative;
-  flex-grow: 1;
-  margin: 0 auto;
-  width: 90%;
-  max-width: 1280px;
-  border: 1px solid #ddd;
-  background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-              linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-              linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-              linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-  background-size: 40px 40px;
-  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
-  overflow: auto;
-  touch-action: none;
-  min-height: 500px;
-}
-
-.image-wrapper {
-  position: absolute;
-  width: 200px;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-  transition: box-shadow 0.2s ease;
-}
-
-.image-wrapper:active {
-  cursor: grabbing;
-  box-shadow: 0 0 10px rgba(0, 150, 255, 0.8);
-  z-index: 9999 !important;
-}
-
-.image-wrapper::before {
-  content: '';
-  position: absolute;
-  bottom: 10px;
-  left: 5%;
-  width: 90%;
-  height: 20%;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 50% / 100%;
-  filter: blur(10px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.image-wrapper img {
-  width: 100%;
-  display: block;
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  border: 1px solid #ccc;
-  position: relative;
-  z-index: 2;
-  object-fit: contain;
-  background: white;
-}
-
-.image-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: var(--img-url);
-  background-repeat: no-repeat;
-  background-size: contain;
-  transform: scaleY(-1);
-  opacity: var(--reflection-opacity, 0.25);
-  filter: blur(2px);
-  pointer-events: none;
-  z-index: 1;
+.grid-toggle {
+  margin-left: 10px;
 }
