@@ -5,7 +5,10 @@ const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
-const toggleGrid = document.getElementById("toggleGrid");
+
+const guideLineVertical = document.getElementById("guideLineVertical");
+const guideLineHorizontal = document.getElementById("guideLineHorizontal");
+const toggleGridCheckbox = document.getElementById("toggleGrid");
 
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
@@ -15,7 +18,7 @@ let dragData = {
   draggingEl: null,
   offsetX: 0,
   offsetY: 0,
-  isDragging: false
+  isDragging: false,
 };
 
 let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
@@ -26,7 +29,7 @@ function handleUpload(event) {
 
   previewArea.innerHTML = "";
 
-  const columns = 4;
+  const columns = 4; // antal billeder per række
   const spacingX = 230;
   const spacingY = 320;
 
@@ -37,22 +40,23 @@ function handleUpload(event) {
 
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
-      wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
+      // Beregn grid position
       const col = index % columns;
       const row = Math.floor(index / columns);
 
+      wrapper.style.position = "absolute";
       wrapper.style.left = `${20 + col * spacingX}px`;
       wrapper.style.top = `${20 + row * spacingY}px`;
 
       const img = document.createElement("img");
       img.src = url;
 
-      // Når billedet loader, sæt højde så den passer med bredden og bevarer prop.
       img.onload = () => {
         const ratio = img.naturalHeight / img.naturalWidth;
-        wrapper.style.height = `${wrapper.clientWidth * ratio}px`;
+        wrapper.style.width = "200px"; // fast bredde
+        wrapper.style.height = `${200 * ratio}px`;
         applyShadow(wrapper, lightAngleRad);
       };
 
@@ -63,6 +67,10 @@ function handleUpload(event) {
     };
     reader.readAsDataURL(file);
   });
+
+  // Juster preview-area højde
+  const rows = Math.ceil(files.length / columns);
+  previewArea.style.height = `${rows * spacingY + 40}px`;
 }
 
 function updateReflectionOpacity() {
@@ -82,12 +90,88 @@ function applyShadow(wrapper, angleRad) {
   const distance = 10;
   const xOffset = Math.cos(angleRad) * distance;
   const yOffset = Math.sin(angleRad) * distance;
+
   wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
 }
 
 function clearImages() {
   uploadInput.value = "";
   previewArea.innerHTML = "";
+  previewArea.style.height = "auto";
+}
+
+function checkSnapLines(movingEl) {
+  if (!toggleGridCheckbox.checked) {
+    guideLineVertical.style.display = "none";
+    guideLineHorizontal.style.display = "none";
+    return;
+  }
+
+  const SNAP_DISTANCE = 10;
+
+  guideLineVertical.style.display = "none";
+  guideLineHorizontal.style.display = "none";
+
+  const movingRect = movingEl.getBoundingClientRect();
+  const containerRect = previewArea.getBoundingClientRect();
+
+  const wrappers = Array.from(document.querySelectorAll(".image-wrapper")).filter(w => w !== movingEl);
+
+  let snapX = null;
+  let snapY = null;
+
+  wrappers.forEach(w => {
+    const r = w.getBoundingClientRect();
+
+    // Horisontale snap-punkter: venstre, midte, højre
+    const pointsMovingX = [
+      movingRect.left,
+      movingRect.left + movingRect.width / 2,
+      movingRect.left + movingRect.width,
+    ];
+    const pointsOtherX = [
+      r.left,
+      r.left + r.width / 2,
+      r.left + r.width,
+    ];
+
+    pointsMovingX.forEach(px => {
+      pointsOtherX.forEach(pxOther => {
+        if (Math.abs(px - pxOther) <= SNAP_DISTANCE) {
+          snapX = pxOther - containerRect.left;
+        }
+      });
+    });
+
+    // Vertikale snap-punkter: top, midte, bund
+    const pointsMovingY = [
+      movingRect.top,
+      movingRect.top + movingRect.height / 2,
+      movingRect.top + movingRect.height,
+    ];
+    const pointsOtherY = [
+      r.top,
+      r.top + r.height / 2,
+      r.top + r.height,
+    ];
+
+    pointsMovingY.forEach(py => {
+      pointsOtherY.forEach(pyOther => {
+        if (Math.abs(py - pyOther) <= SNAP_DISTANCE) {
+          snapY = pyOther - containerRect.top;
+        }
+      });
+    });
+  });
+
+  if (snapX !== null) {
+    guideLineVertical.style.left = snapX + "px";
+    guideLineVertical.style.display = "block";
+  }
+  if (snapY !== null) {
+    guideLineHorizontal.style.top = snapY + "px";
+    guideLineHorizontal.style.display = "block";
+  }
 }
 
 function makeDraggable(el) {
@@ -101,34 +185,39 @@ function makeDraggable(el) {
     dragData.isDragging = true;
     el.style.zIndex = 1000;
   });
-
-  window.addEventListener("mousemove", e => {
-    if (!dragData.isDragging || !dragData.draggingEl) return;
-
-    const containerRect = previewArea.getBoundingClientRect();
-    const el = dragData.draggingEl;
-    const elRect = el.getBoundingClientRect();
-
-    let x = e.clientX - containerRect.left - dragData.offsetX;
-    let y = e.clientY - containerRect.top - dragData.offsetY;
-
-    if (x < 0) x = 0;
-    if (y < 0) y = 0;
-    if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
-    if (y + elRect.height > containerRect.height) y = containerRect.height - elRect.height;
-
-    el.style.left = x + "px";
-    el.style.top = y + "px";
-  });
-
-  window.addEventListener("mouseup", e => {
-    if (dragData.isDragging && dragData.draggingEl) {
-      dragData.draggingEl.style.zIndex = 1;
-    }
-    dragData.isDragging = false;
-    dragData.draggingEl = null;
-  });
 }
+
+window.addEventListener("mousemove", e => {
+  if (!dragData.isDragging || !dragData.draggingEl) return;
+
+  const containerRect = previewArea.getBoundingClientRect();
+  const el = dragData.draggingEl;
+  const elRect = el.getBoundingClientRect();
+
+  let x = e.clientX - containerRect.left - dragData.offsetX;
+  let y = e.clientY - containerRect.top - dragData.offsetY;
+
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
+  if (y + elRect.height > containerRect.height) y = containerRect.height - elRect.height;
+
+  el.style.left = x + "px";
+  el.style.top = y + "px";
+
+  checkSnapLines(el);
+});
+
+window.addEventListener("mouseup", e => {
+  if (dragData.isDragging && dragData.draggingEl) {
+    dragData.draggingEl.style.zIndex = 1;
+  }
+  dragData.isDragging = false;
+  dragData.draggingEl = null;
+
+  guideLineVertical.style.display = "none";
+  guideLineHorizontal.style.display = "none";
+});
 
 function exportLayout() {
   const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
@@ -156,10 +245,6 @@ function exportLayout() {
 
   const containerRect = previewArea.getBoundingClientRect();
 
-  // Hvid baggrund i eksport
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
   wrappers.forEach(wrapper => {
     const img = wrapper.querySelector("img");
     const wrapperRect = wrapper.getBoundingClientRect();
@@ -173,21 +258,20 @@ function exportLayout() {
     const displayedWidth = wrapperRect.width * xRatio;
     const displayedHeight = wrapperRect.height * yRatio;
 
-    // Tegn billede
     ctx.drawImage(img, x, y, displayedWidth, displayedHeight);
 
-    // Tegn refleksion (flip lodret)
+    // Reflection
     ctx.save();
-    ctx.globalAlpha = opacity;
     ctx.translate(x, y + displayedHeight * 2);
     ctx.scale(1, -1);
+    ctx.globalAlpha = opacity;
     ctx.drawImage(img, 0, 0, displayedWidth, displayedHeight);
     ctx.restore();
   });
 
-  const dataURL = canvasElement.toDataURL(`image/${fileFormat}`);
+  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   const link = document.createElement("a");
-  link.download = `layout.${fileFormat}`;
-  link.href = dataURL;
+  link.download = `studio-layout.${fileFormat}`;
+  link.href = dataUrl;
   link.click();
 }
