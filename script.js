@@ -1,166 +1,135 @@
 const uploadInput = document.getElementById("imageUpload");
 const previewArea = document.getElementById("previewArea");
-const canvasElement = document.getElementById("exportCanvas");
+const canvas = document.getElementById("exportCanvas");
 const opacitySlider = document.getElementById("opacitySlider");
-const lightAngleSlider = document.getElementById("lightAngleSlider");
-const canvasSizeSelect = document.getElementById("canvasSize");
-const fileFormatSelect = document.getElementById("fileFormat");
+const lightSlider = document.getElementById("lightAngleSlider");
+const bgPicker = document.getElementById("bgColorPicker");
+const sizeSel = document.getElementById("canvasSize");
+const fmtSel = document.getElementById("fileFormat");
 
 uploadInput.addEventListener("change", handleUpload);
-opacitySlider.addEventListener("input", updateReflectionOpacity);
-lightAngleSlider.addEventListener("input", updateLightDirection);
+opacitySlider.addEventListener("input", updateReflect);
+lightSlider.addEventListener("input", updateShadows);
 
-let dragData = {
-  draggingEl: null,
-  offsetX: 0,
-  offsetY: 0,
-};
+let dragEl = null, dx=0, dy=0;
+let lightRad = lightSlider.value * Math.PI/180;
 
-// Gem lysvinkel i radianer
-let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-
-function handleUpload(event) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-
+function handleUpload(e){
   previewArea.innerHTML = "";
-
-  const columns = 4; // antal billeder per række
-  const spacingX = 230;
-  const spacingY = 320;
-
-  files.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const url = e.target.result;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "image-wrapper";
-      wrapper.style.setProperty("--img-url", `url(${url})`);
-      wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
-
-      // Beregn grid position
-      const col = index % columns;
-      const row = Math.floor(index / columns);
-
-      wrapper.style.left = `${20 + col * spacingX}px`;
-      wrapper.style.top = `${20 + row * spacingY}px`;
-
-      const img = document.createElement("img");
+  const files = [...e.target.files];
+  files.forEach((file,i)=>{
+    const r = new FileReader();
+    r.onload = ev=>{
+      const url = ev.target.result;
+      const w = document.createElement("div");
+      w.className = "image-wrapper";
+      w.style.setProperty("--img-url",`url(${url})`);
+      w.style.setProperty("--reflection-opacity",opacitySlider.value);
+      w.style.left = `${20 + (i%4)*230}px`;
+      w.style.top = `${20 + Math.floor(i/4)*320}px`;
+      const img = new Image();
       img.src = url;
-
-      // Når billedet loader, sæt højde, så den passer med bredden og bevarer prop.
-      img.onload = () => {
-        const ratio = img.naturalHeight / img.naturalWidth;
-        wrapper.style.height = `${wrapper.clientWidth * ratio}px`;
-        applyShadow(wrapper, lightAngleRad);
+      img.onload = ()=>{
+        const h = img.naturalHeight/img.naturalWidth;
+        w.style.height = `${200*h}px`;
+        w.appendChild(img);
+        previewArea.appendChild(w);
+        makeDrag(w);
+        updateShadows();
       };
-
-      wrapper.appendChild(img);
-      previewArea.appendChild(wrapper);
-
-      makeDraggable(wrapper);
     };
-    reader.readAsDataURL(file);
+    r.readAsDataURL(file);
   });
 }
 
-function updateReflectionOpacity() {
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
+function updateReflect(){
+  document.querySelectorAll(".image-wrapper").forEach(w =>{
+    w.style.setProperty("--reflection-opacity",opacitySlider.value);
   });
 }
 
-function updateLightDirection() {
-  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    applyShadow(wrapper, lightAngleRad);
+function updateShadows(){
+  lightRad = lightSlider.value * Math.PI/180;
+  document.querySelectorAll(".image-wrapper").forEach(w => {
+    const d = 8;
+    const x = Math.cos(lightRad)*d, y = Math.sin(lightRad)*d;
+    w.style.filter = `drop-shadow(${x}px ${y}px 8px rgba(0,0,0,0.15))`;
   });
 }
 
-function applyShadow(wrapper, angleRad) {
-  const distance = 10;
-  const xOffset = Math.cos(angleRad) * distance;
-  const yOffset = Math.sin(angleRad) * distance;
-
-  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
+function makeDrag(w){
+  w.addEventListener("mousedown",e=>{
+    dragEl = w;
+    const r = w.getBoundingClientRect();
+    dx = e.clientX - r.left; dy = e.clientY - r.top;
+    w.style.zIndex = 99;
+  });
 }
 
-function clearImages() {
-  uploadInput.value = "";
+window.addEventListener("mousemove", e=>{
+  if(!dragEl) return;
+  const p = previewArea.getBoundingClientRect();
+  let x = e.clientX - p.left - dx, y = e.clientY - p.top - dy;
+  x = Math.max(0,Math.min(x,p.width-dragEl.clientWidth));
+  y = Math.max(0,Math.min(y,p.height-dragEl.clientHeight));
+  dragEl.style.left = x+"px"; dragEl.style.top = y+"px";
+});
+window.addEventListener("mouseup",()=>{
+  if(dragEl) dragEl.style.zIndex = 1;
+  dragEl = null;
+});
+
+function clearImages(){
   previewArea.innerHTML = "";
-  previewArea.style.height = "auto";
 }
 
-function makeDraggable(el) {
-  el.style.position = "absolute";
+function exportLayout(){
+  const items = [...document.querySelectorAll(".image-wrapper")];
+  if(!items.length) return;
 
-  el.addEventListener("mousedown", e => {
-    e.preventDefault();
-    dragData.draggingEl = el;
+  let cw,ch;
+  if(sizeSel.value=="auto"){
+    const r = previewArea.getBoundingClientRect();
+    cw=r.width; ch=r.height;
+  } else [cw,ch] = sizeSel.value.split("x").map(Number);
 
-    const rect = el.getBoundingClientRect();
-    dragData.offsetX = e.clientX - rect.left;
-    dragData.offsetY = e.clientY - rect.top;
+  canvas.width = cw; canvas.height = ch;
+  const cx = canvas.getContext("2d");
+  cx.fillStyle = bgPicker.value;
+  cx.fillRect(0,0,cw,ch);
+  cx.imageSmoothingQuality = "high";
 
-    el.style.zIndex = 1000;
+  const pr = previewArea.getBoundingClientRect();
+  const margin = 20;
+
+  items.forEach(w=>{
+    const img = w.querySelector("img");
+    const wd = w.getBoundingClientRect();
+    const rx = (wd.left - pr.left);
+    const ry = (wd.top - pr.top);
+    const sx = cw/pr.width, sy = ch/pr.height;
+    const px = rx*sx, py=ry*sy, pxw = wd.width*sx, pxh = wd.height*sy;
+    // glass-skærm
+    const gh=pxh*0.1;
+    const grad = cx.createLinearGradient(px,py+pxh,px,py+pxh+gh);
+    grad.addColorStop(0, "rgba(255,255,255,0.4)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    cx.fillStyle = grad;
+    cx.filter="blur(8px)";
+    cx.fillRect(px,py+pxh-gh/2,pxw,gh);
+    cx.filter="none";
+    cx.drawImage(img,px,py,pxw,pxh);
+    // refleksion
+    cx.save();
+    cx.translate(px,py+pxh*2);
+    cx.scale(1,-1); cx.globalAlpha = parseFloat(opacitySlider.value);
+    cx.drawImage(img,0,0,pxw,pxh);
+    cx.restore();
+    cx.globalAlpha = 1;
   });
+
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL(`image/${fmtSel.value}`,1.0);
+  link.download=`layout.${fmtSel.value}`;
+  link.click();
 }
-
-window.addEventListener("mousemove", e => {
-  if (!dragData.draggingEl) return;
-
-  const containerRect = previewArea.getBoundingClientRect();
-  const el = dragData.draggingEl;
-  const elRect = el.getBoundingClientRect();
-
-  let x = e.clientX - containerRect.left - dragData.offsetX;
-  let y = e.clientY - containerRect.top - dragData.offsetY;
-
-  if (x < 0) x = 0;
-  if (y < 0) y = 0;
-  if (x + elRect.width > containerRect.width) x = containerRect.width - elRect.width;
-  if (y + elRect.height > containerRect.height) y = containerRect.height - elRect.height;
-
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-});
-
-window.addEventListener("mouseup", () => {
-  if (dragData.draggingEl) {
-    dragData.draggingEl.style.zIndex = 1;
-  }
-  dragData.draggingEl = null;
-});
-
-function exportLayout() {
-  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
-  if (!wrappers.length) return;
-
-  const opacity = parseFloat(opacitySlider.value);
-  const fileFormat = fileFormatSelect.value;
-  const size = canvasSizeSelect.value;
-
-  let canvasWidth, canvasHeight;
-  if (size === "auto") {
-    const rect = previewArea.getBoundingClientRect();
-    canvasWidth = rect.width;
-    canvasHeight = rect.height;
-  } else {
-    [canvasWidth, canvasHeight] = size.split("x").map(Number);
-  }
-
-  canvasElement.width = canvasWidth;
-  canvasElement.height = canvasHeight;
-
-  const ctx = canvasElement.getContext("2d");
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  ctx.imageSmoothingQuality = "high";
-  ctx.fillStyle = "white";   // Hvid baggrund
-  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-  const containerRect = previewArea.getBoundingClientRect();
-
-  wrappers.forEach(wrapper => {
-    const img = wrapper.querySelector("img");
-    const wrapperRect = wrapper
