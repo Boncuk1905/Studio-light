@@ -15,9 +15,9 @@ function handleUpload(event) {
       const imageData = e.target.result;
 
       const wrapper = document.createElement("div");
-wrapper.className = "image-wrapper";
-wrapper.style.setProperty("--img-url", `url(${imageData})`);
-wrapper.style.backgroundImage = `url(${imageData})`;
+      wrapper.className = "image-wrapper";
+      wrapper.style.setProperty("--img-url", `url(${imageData})`);
+      wrapper.style.backgroundImage = `url(${imageData})`;
 
       const img = document.createElement("img");
       img.src = imageData;
