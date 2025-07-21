@@ -24,8 +24,11 @@ function handleUpload(event) {
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
       const img = document.createElement("img");
-      img.src = url;
-      wrapper.appendChild(img);
+     img.onload = () => {
+  const cleanImg = removeWhiteBackground(img);
+  wrapper.appendChild(cleanImg);
+};
+img.src = url;
       previewArea.appendChild(wrapper);
 
       // Drag events
