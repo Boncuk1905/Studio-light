@@ -18,6 +18,13 @@ function handleUpload(event) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
 
+  // Ryd previewArea inden upload
+  previewArea.innerHTML = "";
+
+  const columns = 4; // Hvor mange billeder pr. række
+  const spacingX = 230; // afstand mellem billeder vandret
+  const spacingY = 320; // afstand mellem billeder lodret
+
   files.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -28,9 +35,12 @@ function handleUpload(event) {
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
-      // Sæt startposition (frit placeret)
-      wrapper.style.left = "20px";
-      wrapper.style.top = `${20 + index * 320}px`;
+      // Beregn position i grid (spread ud i rækker og kolonner)
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+
+      wrapper.style.left = `${20 + col * spacingX}px`;
+      wrapper.style.top = `${20 + row * spacingY}px`;
 
       const img = document.createElement("img");
       img.src = url;
@@ -42,6 +52,10 @@ function handleUpload(event) {
     };
     reader.readAsDataURL(file);
   });
+
+  // Juster højden på previewArea så alle billeder er synlige
+  const rows = Math.ceil(files.length / columns);
+  previewArea.style.height = `${rows * spacingY + 40}px`;
 }
 
 function updateReflectionOpacity() {
@@ -53,23 +67,22 @@ function updateReflectionOpacity() {
 function clearImages() {
   uploadInput.value = "";
   previewArea.innerHTML = "";
+  previewArea.style.height = "auto";
 }
 
-// Forbedret drag & drop, kun ét element kan flyttes ad gangen
+// Drag & drop - kun ét element kan flyttes ad gangen
 function makeDraggable(el) {
   el.style.position = "absolute";
 
   el.addEventListener("mousedown", e => {
-    e.preventDefault(); // Forhindrer tekst-markering osv.
+    e.preventDefault();
 
     dragData.draggingEl = el;
 
-    // Beregn offset mellem mus og elementets øverste venstre hjørne
     const rect = el.getBoundingClientRect();
     dragData.offsetX = e.clientX - rect.left;
     dragData.offsetY = e.clientY - rect.top;
 
-    // Forbedring: bring element til front, så det ikke bliver "overdækket"
     el.style.zIndex = 1000;
   });
 }
@@ -96,7 +109,7 @@ window.addEventListener("mousemove", e => {
 
 window.addEventListener("mouseup", e => {
   if (dragData.draggingEl) {
-    dragData.draggingEl.style.zIndex = 1; // Sæt z-index tilbage
+    dragData.draggingEl.style.zIndex = 1;
   }
   dragData.draggingEl = null;
 });
@@ -132,24 +145,19 @@ function exportLayout() {
     const img = wrapper.querySelector("img");
     const wrapperRect = wrapper.getBoundingClientRect();
 
-    // Beregn position relativt til previewArea
     const x = wrapperRect.left - containerRect.left;
     const y = wrapperRect.top - containerRect.top;
-
-    // Her bruger vi *kun* den skalerede bredde (wrapper.clientWidth)
-    // For højde beregnes ud fra proportionen af billedet, så det ikke bliver squished
 
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
 
+    // Beregn højde så proportioner bevares (bredde er wrapper.clientWidth)
     const displayedWidth = wrapper.clientWidth;
-    // Beregn højde med samme proportion
     const displayedHeight = naturalHeight * (displayedWidth / naturalWidth);
 
-    // Tegn billede med korrekt proportion
     ctx.drawImage(img, x, y, displayedWidth, displayedHeight);
 
-    // Tegn refleksion
+    // Refleksion
     ctx.save();
     ctx.translate(x, y + displayedHeight * 2);
     ctx.scale(1, -1);
