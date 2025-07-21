@@ -1,0 +1,82 @@
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 1rem;
+  background: #f9f9f9;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+#previewArea {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  border: 1px solid #ccc;
+  overflow: auto;
+  background-color: transparent;
+}
+
+.image-wrapper {
+  position: absolute;
+  cursor: grab;
+  box-sizing: border-box;
+  user-select: none;
+  background-color: transparent;
+}
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  background: #444;
+  cursor: nwse-resize;
+  z-index: 2;
+}
+
+.guide-line {
+  position: absolute;
+  background-color: red;
+  z-index: 9999;
+  display: none;
+}
+
+.vertical {
+  width: 1px;
+  top: 0;
+  bottom: 0;
+}
+
+.horizontal {
+  height: 1px;
+  left: 0;
+  right: 0;
+}
+
+.solid {
+  background-color: red;
+}
+
+.dotted {
+  border: 1px dotted red;
+  background-color: transparent;
+}
+
+.reflection {
+  transform: scaleY(-1);
+  opacity: 0.25;
+}
