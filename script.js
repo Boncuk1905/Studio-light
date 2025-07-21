@@ -1,3 +1,8 @@
+uploadInput.addEventListener("change", () => {
+  alert("Images selected — script is running!");
+  handleUpload(event);
+});
+
 const uploadInput = document.getElementById("imageUpload");
 const previewArea = document.getElementById("previewArea");
 const exportCanvas = document.getElementById("exportCanvas");
