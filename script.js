@@ -1,356 +1,178 @@
-const uploadInput = document.getElementById("imageUpload");
-const previewArea = document.getElementById("previewArea");
-const canvasElement = document.getElementById("exportCanvas");
+const canvas = document.getElementById("previewCanvas");
+const ctx = canvas.getContext("2d");
+
+const imageUpload = document.getElementById("imageUpload");
+const reflectionToggle = document.getElementById("reflectionToggle");
 const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
-const canvasSizeSelect = document.getElementById("canvasSize");
-const fileFormatSelect = document.getElementById("fileFormat");
-const reflectionToggle = document.getElementById("reflectionToggle");
-const bgToggle = document.getElementById("bgToggle");
-const midlineToggle = document.getElementById("midlineToggle");
+const canvasSize = document.getElementById("canvasSize");
+const fileFormat = document.getElementById("fileFormat");
+const bgType = document.getElementById("bgType");
+const toggleMidBtn = document.getElementById("toggleMidLines");
 
-uploadInput.addEventListener("change", handleUpload);
-opacitySlider.addEventListener("input", updateReflectionOpacity);
-lightAngleSlider.addEventListener("input", updateLightDirection);
-reflectionToggle.addEventListener("change", updateReflectionVisibility);
-bgToggle.addEventListener("change", updateBackground);
-midlineToggle.addEventListener("change", updateGuides);
+let images = [];
+let selectedImage = null;
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+let showMidGuides = false;
 
-let dragData = {
-  draggingEl: null,
-  offsetX: 0,
-  offsetY: 0,
-  resizingEl: null,
-  resizeStart: null,
-  resizeDir: null
-};
+canvas.addEventListener("mousedown", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
 
-let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-
-function handleUpload(event) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-
-  previewArea.innerHTML = "";
-  clearGuides();
-
-  files.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const url = e.target.result;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "image-wrapper";
-      wrapper.style.position = "absolute";
-      wrapper.style.left = 20 + index * 150 + "px";
-      wrapper.style.top = 20 + "px";
-      wrapper.style.cursor = "move";
-      wrapper.style.userSelect = "none";
-
-      const img = document.createElement("img");
-      img.src = url;
-      img.draggable = false;
-
-      img.onload = () => {
-        // Sæt proportional størrelse max 200x200 px i preview, behold ratio
-        const maxDim = 200;
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-        if (width > height && width > maxDim) {
-          height = (height / width) * maxDim;
-          width = maxDim;
-        } else if (height > width && height > maxDim) {
-          width = (width / height) * maxDim;
-          height = maxDim;
-        } else if (width === height && width > maxDim) {
-          width = maxDim;
-          height = maxDim;
-        }
-        wrapper.style.width = width + "px";
-        wrapper.style.height = height + "px";
-
-        updateShadow(wrapper);
-      };
-
-      wrapper.appendChild(img);
-      previewArea.appendChild(wrapper);
-
-      makeDraggable(wrapper);
-      makeResizable(wrapper);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// Opdater refleksionens opacity i CSS variabler (kan bruges til preview refleksion visning hvis lavet)
-function updateReflectionOpacity() {
-  // Kan bruges til fremtidig preview refleksion opacity, men reflektion tegnes på canvas ved export
-}
-
-function updateLightDirection() {
-  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => updateShadow(wrapper));
-}
-
-function updateShadow(wrapper) {
-  const distance = 10;
-  const xOffset = Math.cos(lightAngleRad) * distance;
-  const yOffset = Math.sin(lightAngleRad) * distance;
-
-  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
-}
-
-function updateReflectionVisibility() {
-  // Her kan vi lave evt preview ændring, men reflektion tegnes først ved export
-}
-
-function updateBackground() {
-  if (bgToggle.checked) {
-    previewArea.style.backgroundColor = "#ffffff";
-  } else {
-    previewArea.style.backgroundColor = "transparent";
-  }
-}
-
-function updateGuides() {
-  if (midlineToggle.checked) {
-    drawMidGuides();
-  } else {
-    clearGuides();
-  }
-}
-
-function drawMidGuides() {
-  clearGuides();
-  const w = previewArea.clientWidth;
-  const h = previewArea.clientHeight;
-
-  const vLine = document.createElement("div");
-  vLine.className = "mid-guide";
-  vLine.style.left = w / 2 + "px";
-  vLine.style.top = "0px";
-  vLine.style.height = h + "px";
-  vLine.style.width = "1px";
-  previewArea.appendChild(vLine);
-
-  const hLine = document.createElement("div");
-  hLine.className = "mid-guide";
-  hLine.style.top = h / 2 + "px";
-  hLine.style.left = "0px";
-  hLine.style.width = w + "px";
-  hLine.style.height = "1px";
-  previewArea.appendChild(hLine);
-}
-
-function clearGuides() {
-  const guides = previewArea.querySelectorAll(".mid-guide");
-  guides.forEach(g => g.remove());
-}
-
-function makeDraggable(el) {
-  el.addEventListener("mousedown", e => {
-    if (e.button !== 0) return; // Kun venstreklik
-    dragData.draggingEl = el;
-    const rect = el.getBoundingClientRect();
-    const previewRect = previewArea.getBoundingClientRect();
-    dragData.offsetX = e.clientX - rect.left;
-    dragData.offsetY = e.clientY - rect.top;
-    el.style.zIndex = 1000;
-
-    e.preventDefault();
-  });
-}
-
-window.addEventListener("mousemove", e => {
-  if (!dragData.draggingEl) return;
-  const el = dragData.draggingEl;
-  const previewRect = previewArea.getBoundingClientRect();
-  let x = e.clientX - previewRect.left - dragData.offsetX;
-  let y = e.clientY - previewRect.top - dragData.offsetY;
-
-  // Begræns bevægelse indenfor preview area
-  if (x < 0) x = 0;
-  if (y < 0) y = 0;
-  if (x + el.offsetWidth > previewRect.width) x = previewRect.width - el.offsetWidth;
-  if (y + el.offsetHeight > previewRect.height) y = previewRect.height - el.offsetHeight;
-
-  // Snap til midterlinie
-  const midX = previewRect.width / 2 - el.offsetWidth / 2;
-  const snapDist = 10;
-  if (Math.abs(x - midX) < snapDist) {
-    x = midX;
-  }
-
-  // Snap til andre billeder horisontalt hvis højde er næsten samme (±5 px)
-  const wrappers = [...document.querySelectorAll(".image-wrapper")].filter(w => w !== el);
-  wrappers.forEach(other => {
-    if (Math.abs(other.offsetTop - y) < 5) {
-      y = other.offsetTop;
+  for (let i = images.length - 1; i >= 0; i--) {
+    const img = images[i];
+    if (mx >= img.x && mx <= img.x + img.w && my >= img.y && my <= img.y + img.h) {
+      selectedImage = img;
+      offsetX = mx - img.x;
+      offsetY = my - img.y;
+      isDragging = true;
+      return;
     }
-  });
-
-  el.style.left = x + "px";
-  el.style.top = y + "px";
-});
-
-window.addEventListener("mouseup", e => {
-  if (dragData.draggingEl) {
-    dragData.draggingEl.style.zIndex = 1;
   }
-  dragData.draggingEl = null;
 });
 
-// Resize funktion (lavet simpel til nederste højre hjørne)
-function makeResizable(el) {
-  const resizer = document.createElement("div");
-  resizer.className = "resizer";
-  resizer.style.position = "absolute";
-  resizer.style.width = "12px";
-  resizer.style.height = "12px";
-  resizer.style.right = "0";
-  resizer.style.bottom = "0";
-  resizer.style.cursor = "nwse-resize";
-  resizer.style.background = "rgba(0,0,0,0.5)";
-  el.appendChild(resizer);
-
-  resizer.addEventListener("mousedown", e => {
-    dragData.resizingEl = el;
-    dragData.resizeStart = {x: e.clientX, y: e.clientY};
-    dragData.startWidth = el.offsetWidth;
-    dragData.startHeight = el.offsetHeight;
-    e.preventDefault();
-    e.stopPropagation();
-  });
-}
-
-window.addEventListener("mousemove", e => {
-  if (!dragData.resizingEl) return;
-  const el = dragData.resizingEl;
-  const dx = e.clientX - dragData.resizeStart.x;
-  const dy = e.clientY - dragData.resizeStart.y;
-
-  // Proportional resizing based on initial aspect ratio
-  const aspectRatio = dragData.startWidth / dragData.startHeight;
-  let newWidth = dragData.startWidth + dx;
-  let newHeight = newWidth / aspectRatio;
-
-  if (newWidth < 50) newWidth = 50;
-  if (newHeight < 50) newHeight = 50;
-
-  el.style.width = newWidth + "px";
-  el.style.height = newHeight + "px";
+canvas.addEventListener("mouseup", () => {
+  isDragging = false;
+  selectedImage = null;
 });
 
-window.addEventListener("mouseup", e => {
-  dragData.resizingEl = null;
+canvas.addEventListener("mousemove", e => {
+  if (!isDragging || !selectedImage) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  selectedImage.x = mx - offsetX;
+  selectedImage.y = my - offsetY;
+
+  draw();
 });
 
-// Funktion der tegner billede + refleksion med fading
-async function drawImageWithReflection(ctx, img, x, y, width, height, reflectionOn, reflectionOpacity) {
-  // Tegn originalt billede
-  ctx.drawImage(img, x, y, width, height);
+imageUpload.addEventListener("change", async e => {
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise(res => (img.onload = res));
 
-  if (reflectionOn) {
-    ctx.save();
+    const maxH = canvas.height * 0.5;
+    const aspect = img.width / img.height;
+    const h = maxH;
+    const w = h * aspect;
 
-    // Spejl refleksion under billedet
-    ctx.translate(x, y + height * 2);
-    ctx.scale(1, -1);
-
-    ctx.globalAlpha = reflectionOpacity;
-
-    ctx.drawImage(img, 0, 0, width, height);
-
-    // Gradient fade out (fading refleksion)
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
-    gradient.addColorStop(1, 'rgba(255,255,255,1)');
-
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.restore();
-  }
-}
-
-// Eksporterer det hele til canvas og downloader som billede
-async function exportLayout() {
-  // Vælg størrelse
-  let sizeVal = canvasSizeSelect.value.split("x");
-  let exportWidth = parseInt(sizeVal[0]);
-  let exportHeight = parseInt(sizeVal[1]);
-
-  // Clear canvas og baggrund
-  const ctx = canvasElement.getContext("2d");
-  canvasElement.width = exportWidth;
-  canvasElement.height = exportHeight;
-
-  if (bgToggle.checked) {
-    ctx.fillStyle = "#fff"; // hvid baggrund
-    ctx.fillRect(0, 0, exportWidth, exportHeight);
-  } else {
-    ctx.clearRect(0, 0, exportWidth, exportHeight);
-  }
-
-  // Tegn alle billeder proportionelt og placeret ift preview (skaleret op til canvas size)
-  const wrappers = [...document.querySelectorAll(".image-wrapper")];
-  const previewRect = previewArea.getBoundingClientRect();
-
-  for (let wrapper of wrappers) {
-    const img = wrapper.querySelector("img");
-    if (!img.complete) await new Promise(r => img.onload = r);
-
-    // Beregn proportional størrelse og position ift canvas:
-    let scaleX = exportWidth / previewRect.width;
-    let scaleY = exportHeight / previewRect.height;
-
-    // Behold billedets proportioner
-    const naturalAspect = img.naturalWidth / img.naturalHeight;
-    let w = wrapper.offsetWidth * scaleX;
-    let h = wrapper.offsetHeight * scaleY;
-
-    // Tjek for forvrængning: juster enten bredde eller højde for at holde aspekt
-    if (w / h > naturalAspect) {
-      w = h * naturalAspect;
-    } else {
-      h = w / naturalAspect;
-    }
-
-    let x = wrapper.offsetLeft * scaleX;
-    let y = wrapper.offsetTop * scaleY;
-
-    await drawImageWithReflection(
-      ctx,
-      img,
-      x,
-      y,
+    images.push({
+      image: img,
+      x: (canvas.width - w) / 2,
+      y: (canvas.height - h) / 2,
       w,
-      h,
-      reflectionToggle.checked,
-      parseFloat(opacitySlider.value)
-    );
+      h
+    });
+  }
+  draw();
+});
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Baggrund
+  if (bgType.value === "white") {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  if (showMidGuides) drawMidLines();
+
+  for (const img of images) {
+    drawImageWithReflection(ctx, img.image, img.x, img.y, img.w, img.h, reflectionToggle.checked);
   }
 }
 
-// Download canvas som billede i valgt format
-function downloadImage() {
-  const format = fileFormatSelect.value;
-  let mimeType = "image/png";
-  if (format === "jpeg") mimeType = "image/jpeg";
+function drawMidLines() {
+  ctx.strokeStyle = "rgba(0, 0, 255, 0.3)";
+  ctx.beginPath();
+  ctx.moveTo(canvas.width / 2, 0);
+  ctx.lineTo(canvas.width / 2, canvas.height);
+  ctx.stroke();
 
-  canvasElement.toBlob(blob => {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `exported_image.${format}`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }, mimeType);
+  ctx.beginPath();
+  ctx.moveTo(0, canvas.height / 2);
+  ctx.lineTo(canvas.width, canvas.height / 2);
+  ctx.stroke();
 }
 
-// Bind eksport og download knap (antaget de findes i HTML)
-document.getElementById("exportBtn").addEventListener("click", exportLayout);
-document.getElementById("downloadBtn").addEventListener("click", downloadImage);
+function drawImageWithReflection(ctx, img, x, y, w, h, showReflection) {
+  ctx.drawImage(img, x, y, w, h);
 
-// Init preview baggrund
-updateBackground();
+  if (showReflection) {
+    const opacity = parseFloat(opacitySlider.value);
+
+    ctx.save();
+    ctx.translate(0, y * 2 + h);
+    ctx.scale(1, -1);
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+
+    const grad = ctx.createLinearGradient(0, y + h, 0, y + h * 2);
+    grad.addColorStop(0, "rgba(255,255,255,0)");
+    grad.addColorStop(1, bgType.value === "white" ? "#ffffff" : "transparent");
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y + h, w, h);
+    ctx.globalAlpha = 1.0;
+  }
+}
+
+function exportLayout() {
+  const [cw, ch] = canvasSize.value.split("x").map(Number);
+  const tempCanvas = document.createElement("canvas");
+  tempCanvas.width = cw;
+  tempCanvas.height = ch;
+  const tctx = tempCanvas.getContext("2d");
+
+  if (bgType.value === "white") {
+    tctx.fillStyle = "#ffffff";
+    tctx.fillRect(0, 0, cw, ch);
+  }
+
+  for (const img of images) {
+    drawImageWithReflection(tctx, img.image, img.x, img.y, img.w, img.h, reflectionToggle.checked);
+  }
+
+  setTimeout(() => {
+    const format = fileFormat.value;
+    const mime = format === "webp" ? "image/webp" : "image/png";
+    const link = document.createElement("a");
+    link.download = `studio.${format}`;
+    link.href = tempCanvas.toDataURL(mime);
+    link.click();
+  }, 100);
+}
+
+function clearImages() {
+  images = [];
+  draw();
+}
+
+function toggleMidGuides() {
+  showMidGuides = !showMidGuides;
+  draw();
+}
+
+// Event listeners
+canvasSize.addEventListener("change", () => {
+  const [w, h] = canvasSize.value.split("x").map(Number);
+  canvas.width = w;
+  canvas.height = h;
+  draw();
+});
+
+bgType.addEventListener("change", draw);
+reflectionToggle.addEventListener("change", draw);
+opacitySlider.addEventListener("input", draw);
+lightAngleSlider.addEventListener("input", draw);
+toggleMidBtn?.addEventListener("click", toggleMidGuides);
