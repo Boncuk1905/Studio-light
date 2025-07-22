@@ -1,8 +1,6 @@
 const previewArea = document.getElementById('previewArea');
 const imageUpload = document.getElementById('imageUpload');
 const opacitySlider = document.getElementById('opacitySlider');
-const lightAngleSlider = document.getElementById('lightAngleSlider');
-const bgColorPicker = document.getElementById('bgColorPicker');
 const transparentToggle = document.getElementById('transparentToggle');
 const canvasSizeSelect = document.getElementById('canvasSize');
 const fileFormatSelect = document.getElementById('fileFormat');
@@ -20,7 +18,6 @@ let dragHoldTimeout = null;
 let canDrag = false;
 let showCenterLines = false;
 
-// Settings for reflection
 let reflectionOn = true;
 
 function createImageWrapper(img) {
@@ -28,28 +25,35 @@ function createImageWrapper(img) {
   wrapper.classList.add('image-wrapper');
   wrapper.style.left = '10px';
   wrapper.style.top = '10px';
+  wrapper.style.width = img.naturalWidth + 'px';
+  wrapper.style.height = img.naturalHeight + 'px';
+
+  img.style.width = '100%';
+  img.style.height = 'auto';
+  img.style.display = 'block';
+  img.style.userSelect = 'none';
   wrapper.appendChild(img);
 
-  // Create reflection element
+  // Reflection
   const reflection = img.cloneNode();
   reflection.style.position = 'absolute';
   reflection.style.top = '100%';
   reflection.style.left = '0';
+  reflection.style.width = '100%';
+  reflection.style.height = 'auto';
   reflection.style.transform = 'scaleY(-1)';
   reflection.style.opacity = opacitySlider.value;
-  reflection.style.filter = `brightness(0.6)`;
+  reflection.style.filter = 'brightness(0.6)';
   reflection.style.pointerEvents = 'none';
   reflection.style.userSelect = 'none';
 
   wrapper.appendChild(reflection);
-
-  // Store reflection ref for updates
   wrapper.reflection = reflection;
 
-  // Current scale
+  // Scale
   wrapper.scale = 1;
-  
-  // Add wheel event for resizing
+
+  // Resize with mouse wheel + shift
   wrapper.addEventListener('wheel', e => {
     if (!e.shiftKey) return;
     e.preventDefault();
@@ -59,6 +63,8 @@ function createImageWrapper(img) {
     wrapper.scale = newScale;
     img.style.transform = `scale(${newScale})`;
     reflection.style.transform = `scale(${newScale}, -1)`;
+    wrapper.style.width = img.naturalWidth * newScale + 'px';
+    wrapper.style.height = img.naturalHeight * newScale + 'px';
   });
 
   return wrapper;
@@ -76,7 +82,7 @@ function updateBackground() {
   if (transparentToggle.checked) {
     previewArea.style.backgroundColor = 'transparent';
   } else {
-    previewArea.style.backgroundColor = bgColorPicker.value;
+    previewArea.style.backgroundColor = '#ffffff';
   }
 }
 
@@ -86,84 +92,90 @@ function clearAll() {
 }
 
 function drawGuideLines(x, y, targetWrapper) {
-  // Remove old lines
   const oldLines = previewArea.querySelectorAll('.guide-line');
   oldLines.forEach(line => previewArea.removeChild(line));
 
   if (!targetWrapper) return;
 
-  const tolerance = 5;
+  const tolerance = 7;
   const targetRect = targetWrapper.getBoundingClientRect();
   const previewRect = previewArea.getBoundingClientRect();
 
-  // We'll check vertical and horizontal alignment with other images
   images.forEach(wrapper => {
     if (wrapper === targetWrapper) return;
     const rect = wrapper.getBoundingClientRect();
 
-    // Convert coordinates relative to previewArea
     const relX = x;
     const relY = y;
     const wrapperX = rect.left - previewRect.left;
     const wrapperY = rect.top - previewRect.top;
 
-    // Snap vertical (left edges)
+    const targetWidth = targetWrapper.offsetWidth;
+    const targetHeight = targetWrapper.offsetHeight;
+    const wrapperWidth = wrapper.offsetWidth;
+    const wrapperHeight = wrapper.offsetHeight;
+
+    // Left edges snap
     if (Math.abs(relX - wrapperX) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'vertical');
       line.style.left = `${wrapperX}px`;
+      line.style.top = '0';
+      line.style.height = '100%';
       previewArea.appendChild(line);
-      // Snap position
       targetWrapper.style.left = `${wrapperX}px`;
     }
-    // Snap vertical (right edges)
-    const targetWidth = targetWrapper.offsetWidth;
-    const wrapperWidth = wrapper.offsetWidth;
+    // Right edges snap
     if (Math.abs((relX + targetWidth) - (wrapperX + wrapperWidth)) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'vertical');
       line.style.left = `${wrapperX + wrapperWidth}px`;
+      line.style.top = '0';
+      line.style.height = '100%';
       previewArea.appendChild(line);
       targetWrapper.style.left = `${wrapperX + wrapperWidth - targetWidth}px`;
     }
-
-    // Snap horizontal (top edges)
+    // Top edges snap
     if (Math.abs(relY - wrapperY) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'horizontal');
       line.style.top = `${wrapperY}px`;
+      line.style.left = '0';
+      line.style.width = '100%';
       previewArea.appendChild(line);
       targetWrapper.style.top = `${wrapperY}px`;
     }
-    // Snap horizontal (bottom edges)
-    const targetHeight = targetWrapper.offsetHeight;
-    const wrapperHeight = wrapper.offsetHeight;
+    // Bottom edges snap
     if (Math.abs((relY + targetHeight) - (wrapperY + wrapperHeight)) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'horizontal');
       line.style.top = `${wrapperY + wrapperHeight}px`;
+      line.style.left = '0';
+      line.style.width = '100%';
       previewArea.appendChild(line);
       targetWrapper.style.top = `${wrapperY + wrapperHeight - targetHeight}px`;
     }
-
-    // Snap centers vertical
+    // Center vertical snap
     const targetCenterX = relX + targetWidth / 2;
     const wrapperCenterX = wrapperX + wrapperWidth / 2;
     if (Math.abs(targetCenterX - wrapperCenterX) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'vertical');
       line.style.left = `${wrapperCenterX}px`;
+      line.style.top = '0';
+      line.style.height = '100%';
       previewArea.appendChild(line);
       targetWrapper.style.left = `${wrapperCenterX - targetWidth / 2}px`;
     }
-
-    // Snap centers horizontal
+    // Center horizontal snap
     const targetCenterY = relY + targetHeight / 2;
     const wrapperCenterY = wrapperY + wrapperHeight / 2;
     if (Math.abs(targetCenterY - wrapperCenterY) <= tolerance) {
       const line = document.createElement('div');
       line.classList.add('guide-line', 'horizontal');
       line.style.top = `${wrapperCenterY}px`;
+      line.style.left = '0';
+      line.style.width = '100%';
       previewArea.appendChild(line);
       targetWrapper.style.top = `${wrapperCenterY - targetHeight / 2}px`;
     }
@@ -185,36 +197,32 @@ imageUpload.addEventListener('change', e => {
         const wrapper = createImageWrapper(img);
         previewArea.appendChild(wrapper);
         // Center newly added image
-        wrapper.style.left = (previewArea.clientWidth / 2 - img.width / 2) + 'px';
-        wrapper.style.top = (previewArea.clientHeight / 2 - img.height / 2) + 'px';
+        wrapper.style.left = (previewArea.clientWidth / 2 - img.naturalWidth / 2) + 'px';
+        wrapper.style.top = (previewArea.clientHeight / 2 - img.naturalHeight / 2) + 'px';
         images.push(wrapper);
       };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   });
-  // Reset input so same file can be uploaded again if needed
   e.target.value = '';
 });
 
 previewArea.addEventListener('mousedown', e => {
   if (e.target.tagName !== 'IMG') return;
   const wrapper = e.target.parentElement;
-  // Start hold timer for drag
   dragHoldTimeout = setTimeout(() => {
     draggingImage = wrapper;
     dragOffsetX = e.clientX - wrapper.offsetLeft;
     dragOffsetY = e.clientY - wrapper.offsetTop;
     canDrag = true;
     wrapper.classList.add('dragging');
-  }, 300); // 300ms hold to start drag
+  }, 300);
 });
 
 previewArea.addEventListener('mouseup', e => {
   clearTimeout(dragHoldTimeout);
-  if (draggingImage) {
-    draggingImage.classList.remove('dragging');
-  }
+  if (draggingImage) draggingImage.classList.remove('dragging');
   draggingImage = null;
   canDrag = false;
   // Remove guide lines
@@ -242,10 +250,6 @@ opacitySlider.addEventListener('input', () => {
   updateReflectionOpacity();
 });
 
-bgColorPicker.addEventListener('input', () => {
-  updateBackground();
-});
-
 transparentToggle.addEventListener('change', () => {
   updateBackground();
 });
@@ -258,7 +262,6 @@ toggleCenterBtn.addEventListener('click', () => {
   toggleCenterLinesFunc();
 });
 
-// Download function with resizing and preserving aspect ratio
 downloadBtn.addEventListener('click', () => {
   if (images.length === 0) {
     alert('Ingen billeder til eksport!');
@@ -268,14 +271,13 @@ downloadBtn.addEventListener('click', () => {
   const [w, h] = (() => {
     const val = canvasSizeSelect.value;
     if (val === 'auto') {
-      // Auto size: take bounding box of all images
       let maxRight = 0;
       let maxBottom = 0;
       images.forEach(wrapper => {
         const left = parseFloat(wrapper.style.left);
         const top = parseFloat(wrapper.style.top);
-        const width = wrapper.offsetWidth * wrapper.scale;
-        const height = wrapper.offsetHeight * wrapper.scale;
+        const width = wrapper.offsetWidth;
+        const height = wrapper.offsetHeight;
         if (left + width > maxRight) maxRight = left + width;
         if (top + height > maxBottom) maxBottom = top + height;
       });
@@ -290,19 +292,15 @@ downloadBtn.addEventListener('click', () => {
   exportCanvas.height = h;
   const ctx = exportCanvas.getContext('2d');
 
-  // Set background
   if (transparentToggle.checked) {
     ctx.clearRect(0, 0, w, h);
   } else {
-    ctx.fillStyle = bgColorPicker.value;
+    ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, w, h);
   }
 
   images.forEach(wrapper => {
     const img = wrapper.querySelector('img');
-    const reflection = wrapper.reflection;
-
-    // Position and scale on canvas
     const scale = wrapper.scale || 1;
     const left = parseFloat(wrapper.style.left);
     const top = parseFloat(wrapper.style.top);
@@ -312,7 +310,7 @@ downloadBtn.addEventListener('click', () => {
     // Draw main image
     ctx.drawImage(img, left, top, imgWidth, imgHeight);
 
-    // Draw reflection if enabled
+    // Draw reflection
     if (reflectionOn) {
       ctx.save();
       ctx.globalAlpha = parseFloat(opacitySlider.value);
@@ -339,6 +337,6 @@ downloadBtn.addEventListener('click', () => {
   }, `image/${format}`);
 });
 
-opacitySlider.addEventListener('input', updateReflectionOpacity);
+// Init
 updateReflectionOpacity();
 updateBackground();
