@@ -1,59 +1,83 @@
 body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #f5f5f5;
+  font-family: sans-serif;
+  padding: 10px;
+  background-color: #f5f5f5;
 }
-h1 {
-  text-align: center;
-  margin: 20px 0;
-}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  align-items: center;
 }
+
+#previewContainer {
+  position: relative;
+  border: 1px solid #ccc;
+  background-color: white;
+  min-height: 600px;
+  overflow: hidden;
+}
+
 #previewArea {
   position: relative;
   width: 100%;
-  height: 80vh;
-  background: white;
-  border: 1px solid #ccc;
-  overflow: auto;
+  height: 100%;
 }
+
 .image-wrapper {
   position: absolute;
-  cursor: move;
+  cursor: grab;
+  transition: box-shadow 0.2s;
 }
+
 .image-wrapper img {
-  max-width: 100%;
-  height: auto;
   display: block;
-}
-.reflection {
-  opacity: 0.25;
-  transform: scaleY(-1);
-  position: absolute;
-  top: 100%;
-  left: 0;
   width: 100%;
+  height: auto;
 }
-.guide-line {
+
+.image-reflection {
+  transform: scaleY(-1);
+  opacity: var(--reflection-opacity, 0.25);
+}
+
+.snap-line {
   position: absolute;
-  background: rgba(0, 0, 255, 0.4);
-  z-index: 1000;
+  background: limegreen;
+  z-index: 9999;
   pointer-events: none;
 }
-.guide-line.vertical {
+
+.snap-line.vertical {
   width: 1px;
   height: 100%;
 }
-.guide-line.horizontal {
+
+.snap-line.horizontal {
   height: 1px;
   width: 100%;
 }
-.center-line {
-  background: rgba(255, 0, 0, 0.4);
+
+.center-guide {
+  position: absolute;
+  background: rgba(0,0,255,0.3);
+  pointer-events: none;
+  z-index: 1000;
+  display: none;
+}
+
+.center-guide.vertical {
+  width: 1px;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+}
+
+.center-guide.horizontal {
+  height: 1px;
+  left: 0;
+  right: 0;
+  top: 50%;
 }
