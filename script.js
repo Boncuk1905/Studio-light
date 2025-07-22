@@ -44,15 +44,16 @@ function updateBackground() {
 // Reflektion toggle
 function updateReflection() {
   images.forEach(wrapper => {
-    if (reflectionOn) {
-      wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
-      wrapper.classList.remove("no-reflection");
-    } else {
-      wrapper.style.setProperty("--reflection-opacity", "0");
-      wrapper.classList.add("no-reflection");
+    const reflectionImg = wrapper.querySelector(".reflection");
+    if (reflectionOn && reflectionImg) {
+      reflectionImg.style.opacity = opacitySlider.value;
+      reflectionImg.style.display = "block";
+    } else if (reflectionImg) {
+      reflectionImg.style.display = "none";
     }
   });
 }
+
 
 // Tilføj billede til previewArea
 function addImage(file) {
@@ -62,6 +63,20 @@ function addImage(file) {
     wrapper.classList.add("image-wrapper");
     wrapper.style.top = "20px";
     wrapper.style.left = "20px";
+    
+// Tilføj refleksion billede
+const reflection = document.createElement("img");
+reflection.src = src;
+reflection.classList.add("reflection");
+reflection.style.position = "absolute";
+reflection.style.top = "100%";
+reflection.style.left = "0";
+reflection.style.width = "100%";
+reflection.style.height = "auto";
+reflection.style.transform = "scaleY(-1)";
+reflection.style.opacity = opacitySlider.value;
+reflection.style.pointerEvents = "none"; // Skal ikke interagere
+wrapper.appendChild(reflection);
 
     // Opret billed element
     const img = document.createElement("img");
@@ -375,7 +390,35 @@ async function exportLayout() {
     const h = parseFloat(wrapper.style.height) * scaleY;
 
     // Tegn billede
-    await drawImageWithReflection(ctx, img, x, y, w, h, reflectionOn, opacitySlider.value);
+    async function drawImageWithReflection(ctx, img, x, y, width, height, reflectionOn, reflectionOpacity) {
+  // Tegn originalt billede
+  ctx.drawImage(img, x, y, width, height);
+
+  if (reflectionOn) {
+    ctx.save();
+
+    // Flyt ned under billedet og vend lodret (spejl)
+    ctx.translate(x, y + height * 2);
+    ctx.scale(1, -1);
+
+    ctx.globalAlpha = reflectionOpacity;
+
+    // Tegn spejlvendt billede (refleksion)
+    ctx.drawImage(img, 0, 0, width, height);
+
+    // Gradient til fading (gør refleksion transparent nedad)
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${reflectionOpacity})`);
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
+
+    ctx.globalCompositeOperation = 'destination-out'; // Mask gradient
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.restore();
+  }
+}
+
   }
 
   // Download
