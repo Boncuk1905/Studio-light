@@ -2,8 +2,8 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8" />
-  <title>Trixie Preview Studio</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Trixie Product Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>🐶 Trixie Product Visualizer</h1>
@@ -11,31 +11,41 @@
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*">
     
-    <label>Reflection</label><input type="checkbox" id="reflectionToggle" checked>
-    <label>Reflection Opacity</label><input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
-    <label>Light Angle</label><input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
-    
+    <label>Reflection Opacity</label>
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
+
+    <label>Light Angle</label>
+    <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
+
     <label>Canvas Size</label>
     <select id="canvasSize">
       <option value="1280x1280">1280×1280</option>
       <option value="1024x1024">1024×1024</option>
-      <option value="1920x1080">1920×1080</option>
-    </select>
-    
-    <label>Format</label><select id="fileFormat">
-      <option value="png">PNG</option>
-      <option value="webp">WEBP</option>
+      <option value="auto">Auto</option>
     </select>
 
-    <label>Background</label><input type="color" id="bgColorPicker" value="#ffffff">
-    <label><input type="checkbox" id="toggleGrid" checked> Vis linjer</label>
+    <label>Format</label>
+    <select id="fileFormat">
+      <option value="webp">WEBP</option>
+      <option value="png">PNG</option>
+    </select>
+
+    <label>
+      <input type="checkbox" id="toggleBg" checked>
+      Transparent background
+    </label>
+
+    <label>
+      <input type="checkbox" id="toggleReflection" checked>
+      Show Reflection
+    </label>
 
     <button onclick="clearImages()">Clear</button>
     <button onclick="exportLayout()">Download</button>
   </div>
 
   <div id="previewArea"></div>
-  <canvas id="exportCanvas" style="display: none;"></canvas>
+  <canvas id="exportCanvas" style="display:none;"></canvas>
 
   <script src="script.js"></script>
 </body>
