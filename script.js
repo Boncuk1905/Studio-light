@@ -335,11 +335,7 @@ function exportLayout() {
   let width, height;
 
   if (canvasSizeSelect.value === "auto") {
-    // Calculate bounding box of all images
-    let minX = Infinity,
-      minY = Infinity,
-      maxX = -Infinity,
-      maxY = -Infinity;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     wrappers.forEach((w) => {
       const left = parseFloat(w.style.left);
       const top = parseFloat(w.style.top);
@@ -362,20 +358,20 @@ function exportLayout() {
   canvasElement.height = height;
 
   const ctx = canvasElement.getContext("2d");
-  // Clear background
-  if (bgToggle.value === "transparent") {
+
+  // Baggrund
+  const bgColor = bgColorPicker.value;
+  if (bgColor === "#00000000" || bgColor === "transparent") {
     ctx.clearRect(0, 0, width, height);
   } else {
-    ctx.fillStyle = bgToggle.value;
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, width, height);
   }
 
-  // Calculate offset if auto mode
-  let offsetX = 0,
-    offsetY = 0;
+  // Beregn offset hvis auto
+  let offsetX = 0, offsetY = 0;
   if (canvasSizeSelect.value === "auto") {
-    let minX = Infinity,
-      minY = Infinity;
+    let minX = Infinity, minY = Infinity;
     wrappers.forEach((w) => {
       const left = parseFloat(w.style.left);
       const top = parseFloat(w.style.top);
@@ -386,7 +382,7 @@ function exportLayout() {
     offsetY = -minY;
   }
 
-  // Draw each image on canvas
+  // Tegn billeder og refleksion
   wrappers.forEach((wrapper) => {
     const img = wrapper.querySelector("img");
     const left = parseFloat(wrapper.style.left) + offsetX;
@@ -394,27 +390,26 @@ function exportLayout() {
     const w = wrapper.offsetWidth;
     const h = wrapper.offsetHeight;
 
-    ctx.save();
-
-    // Draw reflection if toggled
-    if (reflectionToggle.checked) {
-      ctx.globalAlpha = parseFloat(opacitySlider.value);
-      ctx.translate(left + w / 2, top + h * 2);
-      ctx.scale(1, -1);
-      ctx.drawImage(img, -w / 2, 0, w, h);
-      ctx.globalAlpha = 1.0;
-    }
-
+    // Tegn billede
     ctx.drawImage(img, left, top, w, h);
 
-    ctx.restore();
+    // Refleksion
+    if (reflectionToggle.checked) {
+      ctx.save();
+      ctx.translate(left + w / 2, top + h * 2);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = parseFloat(opacitySlider.value);
+      ctx.drawImage(img, -w / 2, 0, w, h);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
   });
 
   const mimeType = fileFormatSelect.value === "png" ? "image/png" : "image/webp";
   canvasElement.toBlob((blob) => {
     if (blob) {
-      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+      const url = URL.createObjectURL(blob);
       a.href = url;
       a.download = `layout.${fileFormatSelect.value}`;
       document.body.appendChild(a);
@@ -422,7 +417,8 @@ function exportLayout() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } else {
-      alert("Fejl ved generering af billede.");
+      alert("Der opstod en fejl under eksport.");
     }
   }, mimeType);
 }
+
