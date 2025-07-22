@@ -1,52 +1,32 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Trixie Product Visualizer</title>
-<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <title>Trixie Preview Studio</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>🐶 Trixie Product Visualizer</h1>
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*" />
-    <label for="opacitySlider">Reflection Opacity</label>
+    
+    <label>Reflection Opacity</label>
     <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
-
-    <label for="lightAngleSlider">Light Angle</label>
-    <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" />
-
-    <label for="bgToggle">Baggrund</label>
-    <select id="bgToggle">
-      <option value="transparent">Transparent</option>
-      <option value="white">Hvid</option>
-    </select>
-
-    <label for="canvasSize">Canvas Size</label>
-    <select id="canvasSize">
-      <option value="auto">Auto</option>
-      <option value="1280x1280">1280×1280</option>
-      <option value="1024x1024">1024×1024</option>
-    </select>
-
-    <label for="fileFormat">Format</label>
-    <select id="fileFormat">
-      <option value="png">PNG</option>
-      <option value="webp">WEBP</option>
-    </select>
-
-    <label for="reflectionToggle">Refleksion</label>
+    
+    <label>Reflection On/Off</label>
     <input type="checkbox" id="reflectionToggle" checked />
-
-    <label for="showGuides">Vis guide-linjer</label>
-    <input type="checkbox" id="showGuides" checked />
-
-    <button id="clearBtn">Clear</button>
-    <button id="downloadBtn">Download</button>
+    
+    <label>Background Color</label>
+    <input type="color" id="bgColorPicker" value="#00000000" />
+    
+    <button id="downloadBtn">Download Layout</button>
   </div>
 
-  <div id="previewArea"></div>
+  <div id="previewArea" style="position: relative; width: 800px; height: 600px; border: 1px solid #ccc; background: transparent;">
+    <!-- Her vises billederne -->
+  </div>
+
   <canvas id="exportCanvas" style="display:none;"></canvas>
 
   <script src="script.js"></script>
