@@ -10,21 +10,21 @@
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*" />
-    
+
     <label>Reflection Opacity</label>
     <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
-    
+
     <label>Reflection On/Off</label>
     <input type="checkbox" id="reflectionToggle" checked />
-    
+
     <label>Background Color</label>
     <input type="color" id="bgColorPicker" value="#00000000" />
-    
+
     <button id="downloadBtn">Download Layout</button>
   </div>
 
   <div id="previewArea" style="position: relative; width: 800px; height: 600px; border: 1px solid #ccc; background: transparent;">
-    <!-- Her vises billederne -->
+    <!-- Billeder vises her -->
   </div>
 
   <canvas id="exportCanvas" style="display:none;"></canvas>
