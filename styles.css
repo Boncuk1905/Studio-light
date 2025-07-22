@@ -1,102 +1,237 @@
+/* --- Generelt --- */
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
+  background: #f9f9f9;
+  margin: 0;
+  padding: 20px;
+  user-select: none;
 }
 
-.controls {
+h1 {
   margin-bottom: 15px;
+  font-weight: 600;
+}
+
+/* --- Controls --- */
+.controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
   align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
 .controls label {
-  margin-left: 8px;
-  margin-right: 4px;
+  font-size: 14px;
+  margin-left: 5px;
+  margin-right: 5px;
   white-space: nowrap;
 }
 
-#previewArea {
-  position: relative;
-  width: 900px;
-  height: 600px;
-  border: 1px solid #ccc;
-  background: transparent;
-  user-select: none;
-  overflow: hidden;
+.controls input[type="range"],
+.controls select,
+.controls input[type="color"] {
+  cursor: pointer;
 }
 
-/* Wrapper til hvert billede */
+.controls button {
+  cursor: pointer;
+  padding: 6px 12px;
+  background-color: #2978b5;
+  border: none;
+  border-radius: 3px;
+  color: white;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.controls button:hover {
+  background-color: #1b4f73;
+}
+
+.controls .grid-toggle {
+  font-size: 13px;
+  user-select: none;
+  cursor: pointer;
+}
+
+/* --- Preview area --- */
+#previewArea {
+  position: relative;
+  width: 100%;
+  height: 720px;
+  border: 2px dashed #ccc;
+  background-color: transparent; /* Default transparent */
+  overflow: hidden;
+  touch-action: none;
+  margin-bottom: 20px;
+}
+
+/* --- Image Wrapper --- */
 .image-wrapper {
   position: absolute;
-  width: 150px;
   cursor: grab;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease;
   user-select: none;
   touch-action: none;
-  border: 1px dashed transparent;
-  box-sizing: border-box;
+  /* Reflection opacity CSS variable */
+  --reflection-opacity: 0.25;
 }
 
 .image-wrapper.dragging {
   cursor: grabbing;
-  border-color: #3498db;
+  border-color: #2978b5;
+  z-index: 9999;
 }
 
-.image-wrapper.selected {
-  border-color: #e67e22;
-}
-
-/* Billedet */
+/* --- Image inside wrapper --- */
 .image-wrapper img {
-  width: 100%;
-  height: auto;
   display: block;
-  pointer-events: none;
+  max-width: 100%;
+  max-height: 100%;
   user-select: none;
+  pointer-events: none;
+  transform-origin: center center;
+  /* Prevent default image drag */
   -webkit-user-drag: none;
+  -moz-user-drag: none;
+  -ms-user-drag: none;
+  user-drag: none;
 }
 
-/* Snap linjer */
+/* --- Reflection effect --- */
+.image-wrapper::after {
+  content: "";
+  position: absolute;
+  bottom: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: contain;
+  transform: scaleY(-1);
+  opacity: var(--reflection-opacity);
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+/* --- Resize Handles --- */
+.resize-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: white;
+  border: 2px solid #2978b5;
+  box-sizing: border-box;
+  border-radius: 2px;
+  cursor: nwse-resize;
+  user-select: none;
+  touch-action: none;
+  z-index: 10;
+}
+
+/* Position handles - bottom-right corner */
+.resize-handle.br {
+  right: -6px;
+  bottom: -6px;
+}
+
+/* --- Snap guide lines --- */
 .snap-line {
   position: absolute;
-  background: red;
+  background-color: #2978b5;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+/* Vertical line */
+.snap-line.vertical {
+  width: 2px;
+  height: 100%;
+}
+
+/* Horizontal line */
+.snap-line.horizontal {
+  height: 2px;
+  width: 100%;
+}
+
+/* --- Middle guide lines toggle --- */
+#middleGuides {
+  position: absolute;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+.middle-vertical,
+.middle-horizontal {
+  position: absolute;
+  background-color: rgba(41, 120, 181, 0.6);
   z-index: 9999;
   pointer-events: none;
 }
 
-.snap-line.horizontal {
-  height: 1px;
-  width: 100%;
-}
-
-.snap-line.vertical {
-  width: 1px;
-  height: 100%;
-}
-
-/* Midterlinjer */
-#previewArea.show-center-lines::before,
-#previewArea.show-center-lines::after {
-  content: "";
-  position: absolute;
-  background: rgba(255, 0, 0, 0.5);
-  pointer-events: none;
-  z-index: 9000;
-}
-
-#previewArea.show-center-lines::before {
+.middle-vertical {
+  width: 2px;
   top: 0;
+  bottom: 0;
   left: 50%;
-  width: 1px;
-  height: 100%;
   transform: translateX(-50%);
 }
 
-#previewArea.show-center-lines::after {
-  top: 50%;
+.middle-horizontal {
+  height: 2px;
   left: 0;
-  width: 100%;
-  height: 1px;
+  right: 0;
+  top: 50%;
   transform: translateY(-50%);
+}
+
+/* --- Tooltip for buttons or inputs (optional) --- */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: max-content;
+  background-color: #2978b5;
+  color: #fff;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 3px;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 9999;
+  bottom: 125%; 
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  #previewArea {
+    height: 500px;
+  }
 }
