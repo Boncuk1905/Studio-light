@@ -115,25 +115,71 @@ function exportLayout() {
   if (!wrappers.length) return;
 
   const fileFormat = fileFormatSelect.value;
-  const size = canvasSizeSelect.value;
-  const exportReflection = toggleReflection?.checked;
+  const sizeOption = canvasSizeSelect.value;
+  const showReflection = document.getElementById("toggleReflection").checked;
+  const transparent = document.getElementById("transparentToggle").checked;
+  const bgColor = bgColorPicker.value;
   const opacity = parseFloat(opacitySlider.value);
-  const bgColor = bgColorPicker.value || "#ffffff";
 
+  // Bestem canvas størrelse
   let canvasWidth, canvasHeight;
-  if (size === "auto") {
-    const rect = previewArea.getBoundingClientRect();
-    canvasWidth = rect.width;
-    canvasHeight = rect.height;
+
+  if (sizeOption === "auto") {
+    const bounds = previewArea.getBoundingClientRect();
+    canvasWidth = bounds.width;
+    canvasHeight = bounds.height;
   } else {
-    [canvasWidth, canvasHeight] = size.split("x").map(Number);
+    [canvasWidth, canvasHeight] = sizeOption.split("x").map(Number);
   }
 
   canvasElement.width = canvasWidth;
   canvasElement.height = canvasHeight;
+
   const ctx = canvasElement.getContext("2d");
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
+  if (!transparent) {
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  }
+
+  const containerRect = previewArea.getBoundingClientRect();
+
+  wrappers.forEach(wrapper => {
+    const img = wrapper.querySelector("img");
+    const rect = wrapper.getBoundingClientRect();
+
+    const xRatio = canvasWidth / containerRect.width;
+    const yRatio = canvasHeight / containerRect.height;
+
+    const x = (rect.left - containerRect.left) * xRatio;
+    const y = (rect.top - containerRect.top) * yRatio;
+
+    const drawWidth = rect.width * xRatio;
+    const drawHeight = rect.height * yRatio;
+
+    ctx.drawImage(img, x, y, drawWidth, drawHeight);
+
+    if (showReflection) {
+      ctx.save();
+      ctx.translate(x, y + drawHeight * 2);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  // Gem som fil
+  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`);
+  const link = document.createElement("a");
+  link.download = `studio-layout.${fileFormat}`;
+  link.href = dataUrl;
+  link.click();
+}
   // Background
   if (bgColor !== "transparent") {
     ctx.fillStyle = bgColor;
