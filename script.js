@@ -1,88 +1,80 @@
-const uploadInput = document.getElementById("imageUpload");
-const previewArea = document.getElementById("previewArea");
-const canvasElement = document.getElementById("exportCanvas");
-const opacitySlider = document.getElementById("opacitySlider");
-const lightAngleSlider = document.getElementById("lightAngleSlider");
-const canvasSizeSelect = document.getElementById("canvasSize");
-const fileFormatSelect = document.getElementById("fileFormat");
-const bgColorPicker = document.getElementById("bgColorPicker");
-
-const verticalLine = document.getElementById("verticalLine");
-const horizontalLine = document.getElementById("horizontalLine");
-
-uploadInput.addEventListener("change", handleUpload);
-opacitySlider.addEventListener("input", updateReflectionOpacity);
-lightAngleSlider.addEventListener("input", updateLightDirection);
-
-let dragData = {
-  draggingEl: null,
-  offsetX: 0,
-  offsetY: 0,
-};
-
-let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-
-function handleUpload(event) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-
-  const spacingX = 230;
-  const spacingY = 320;
-
-  files.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const url = e.target.result;
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "image-wrapper";
-      wrapper.style.left = `${20 + index * spacingX}px`;
-      wrapper.style.top = `${20 + index * spacingY}px`;
-
-      const img = document.createElement("img");
-      img.src = url;
-
-      img.onload = () => {
-        const ratio = img.naturalHeight / img.naturalWidth;
-        wrapper.style.width = "150px";
-        wrapper.style.height = `${150 * ratio}px`;
-        applyShadow(wrapper, lightAngleRad);
-      };
-
-      wrapper.appendChild(img);
-      previewArea.appendChild(wrapper);
-
-      makeDraggable(wrapper);
-    };
-    reader.readAsDataURL(file);
-  });
+body {
+  font-family: sans-serif;
+  margin: 20px;
+  background: #f8f8f8;
 }
 
-function updateReflectionOpacity() {
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
-  });
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-function updateLightDirection() {
-  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    applyShadow(wrapper, lightAngleRad);
-  });
+#previewArea {
+  position: relative;
+  width: 100%;
+  min-height: 600px;
+  border: 1px solid #ccc;
+  background: transparent;
+  overflow: hidden;
+}
+
+.image-wrapper {
+  position: absolute;
+  cursor: grab;
+  user-select: none;
+  transition: filter 0.2s;
+}
+
+.image-wrapper img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.guide-line {
+  position: absolute;
+  background-color: rgba(0, 150, 255, 0.5);
+  z-index: 999;
+  pointer-events: none;
+}
+
+.guide-line.vertical {
+  width: 1px;
+  height: 100%;
+}
+
+.guide-line.horizontal {
+  height: 1px;
+  width: 100%;
+}
+function getLightAngle() {
+  return (lightAngleSlider.value * Math.PI) / 180;
 }
 
 function applyShadow(wrapper, angleRad) {
   const distance = 10;
   const xOffset = Math.cos(angleRad) * distance;
   const yOffset = Math.sin(angleRad) * distance;
-
   wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
 }
 
-function clearImages() {
-  uploadInput.value = "";
-  previewArea.innerHTML = "";
-  previewArea.style.height = "auto";
+function updateReflectionOpacity() {
+  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
+    if (toggleReflection.checked) {
+      wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
+    }
+  });
+}
+
+function updateLightDirection() {
+  const angleRad = getLightAngle();
+  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
+    applyShadow(wrapper, angleRad);
+  });
 }
 
 function makeDraggable(el) {
@@ -90,80 +82,191 @@ function makeDraggable(el) {
 
   el.addEventListener("mousedown", e => {
     e.preventDefault();
-    dragData.draggingEl = el;
+    draggingEl = el;
+    offsetX = e.clientX - el.getBoundingClientRect().left;
+    offsetY = e.clientY - el.getBoundingClientRect().top;
+    el.style.cursor = "grabbing";
+  });
 
-    const rect = el.getBoundingClientRect();
-    dragData.offsetX = e.clientX - rect.left;
-    dragData.offsetY = e.clientY - rect.top;
+  window.addEventListener("mousemove", e => {
+    if (!draggingEl) return;
 
-    el.style.zIndex = 1000;
+    let x = e.clientX - previewArea.getBoundingClientRect().left - offsetX;
+    let y = e.clientY - previewArea.getBoundingClientRect().top - offsetY;
+
+    // Begræns til previewArea
+    x = Math.max(0, Math.min(x, previewArea.clientWidth - draggingEl.clientWidth));
+    y = Math.max(0, Math.min(y, previewArea.clientHeight - draggingEl.clientHeight));
+
+    // Snap til andre billeder på y-akse
+    if (toggleGrid.checked) {
+      const threshold = 5;
+      const wrappers = Array.from(document.querySelectorAll(".image-wrapper")).filter(w => w !== draggingEl);
+      wrappers.forEach(w => {
+        if (Math.abs(w.offsetTop - y) < threshold) {
+          y = w.offsetTop;
+          showGuideLine("horizontal", y);
+        }
+        if (Math.abs(w.offsetLeft - x) < threshold) {
+          x = w.offsetLeft;
+          showGuideLine("vertical", x);
+        }
+      });
+    }
+
+    draggingEl.style.left = x + "px";
+    draggingEl.style.top = y + "px";
+  });
+
+  window.addEventListener("mouseup", e => {
+    if (draggingEl) {
+      draggingEl.style.cursor = "grab";
+      draggingEl = null;
+      clearGuideLines();
+    }
   });
 }
 
-window.addEventListener("mousemove", e => {
-  if (!dragData.draggingEl) return;
+function showGuideLine(type, pos) {
+  clearGuideLines();
+  const line = document.createElement("div");
+  line.classList.add("guide-line", type);
+  if (type === "vertical") {
+    line.style.left = pos + "px";
+    line.style.top = 0;
+    line.style.height = previewArea.clientHeight + "px";
+  } else {
+    line.style.top = pos + "px";
+    line.style.left = 0;
+    line.style.width = previewArea.clientWidth + "px";
+  }
+  previewArea.appendChild(line);
+  centerLines.push(line);
+}
 
-  const containerRect = previewArea.getBoundingClientRect();
-  const el = dragData.draggingEl;
-  let x = e.clientX - containerRect.left - dragData.offsetX;
-  let y = e.clientY - containerRect.top - dragData.offsetY;
+function clearGuideLines() {
+  centerLines.forEach(line => line.remove());
+  centerLines = [];
+}
 
-  const elWidth = el.offsetWidth;
-  const elHeight = el.offsetHeight;
-  const elCenterX = x + elWidth / 2;
-  const elCenterY = y + elHeight / 2;
+function toggleCenterGuides() {
+  const exists = document.querySelectorAll(".center-line").length > 0;
+  if (exists) {
+    document.querySelectorAll(".center-line").forEach(l => l.remove());
+  } else {
+    const vertical = document.createElement("div");
+    vertical.classList.add("guide-line", "vertical", "center-line");
+    vertical.style.left = (previewArea.clientWidth / 2) + "px";
+    vertical.style.top = 0;
+    vertical.style.height = previewArea.clientHeight + "px";
 
-  let snapX = x;
-  let snapY = y;
-  let showVerticalSnap = false;
-  let showHorizontalSnap = false;
+    const horizontal = document.createElement("div");
+    horizontal.classList.add("guide-line", "horizontal", "center-line");
+    horizontal.style.top = (previewArea.clientHeight / 2) + "px";
+    horizontal.style.left = 0;
+    horizontal.style.width = previewArea.clientWidth + "px";
 
-  document.querySelectorAll(".image-wrapper").forEach(other => {
-    if (other === el) return;
+    previewArea.appendChild(vertical);
+    previewArea.appendChild(horizontal);
+  }
+}
 
-    const otherX = other.offsetLeft;
-    const otherY = other.offsetTop;
-    const otherWidth = other.offsetWidth;
-    const otherHeight = other.offsetHeight;
-    const otherCenterX = otherX + otherWidth / 2;
-    const otherCenterY = otherY + otherHeight / 2;
+function clearImages() {
+  uploadInput.value = "";
+  previewArea.innerHTML = "";
+  clearGuideLines();
+}
 
-    if (Math.abs(elCenterX - otherCenterX) < 10) {
-      snapX = otherX + otherWidth / 2 - elWidth / 2;
-      showVerticalSnap = true;
+// EXPORT/Download funktion med korrekt størrelsesbehandling og baggrund
+
+function exportLayout() {
+  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
+  if (!wrappers.length) return;
+
+  const fileFormat = fileFormatSelect.value;
+  const size = canvasSizeSelect.value;
+
+  let canvasWidth, canvasHeight;
+  if (size === "auto") {
+    canvasWidth = previewArea.clientWidth;
+    canvasHeight = previewArea.clientHeight;
+  } else {
+    [canvasWidth, canvasHeight] = size.split("x").map(Number);
+  }
+
+  canvasElement.width = canvasWidth;
+  canvasElement.height = canvasHeight;
+
+  const ctx = canvasElement.getContext("2d");
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  // Baggrund
+  if (bgToggle.value === "white") {
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  } else {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Transparent
+  }
+
+  wrappers.forEach(wrapper => {
+    const img = wrapper.querySelector("img");
+    const previewRect = previewArea.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+
+    const scaleX = canvasWidth / previewRect.width;
+    const scaleY = canvasHeight / previewRect.height;
+
+    const x = (wrapperRect.left - previewRect.left) * scaleX;
+    const y = (wrapperRect.top - previewRect.top) * scaleY;
+
+    // Beregn proportional størrelse, så billedet ikke bliver squished
+    let drawWidth = wrapperRect.width * scaleX;
+    let drawHeight = wrapperRect.height * scaleY;
+
+    // Hvis original ratio ikke matcher canvas ratio, skaler proportionalt
+    const origRatio = img.naturalWidth / img.naturalHeight;
+    const canvasRatio = drawWidth / drawHeight;
+
+    if (canvasRatio > origRatio) {
+      drawWidth = drawHeight * origRatio;
+    } else {
+      drawHeight = drawWidth / origRatio;
     }
 
-    if (Math.abs(elCenterY - otherCenterY) < 10) {
-      snapY = otherY + otherHeight / 2 - elHeight / 2;
-      showHorizontalSnap = true;
+    // Juster x/y hvis størrelsen er ændret, for at holde billede centreret i wrapper
+    const adjustX = x + (wrapperRect.width * scaleX - drawWidth) / 2;
+    const adjustY = y + (wrapperRect.height * scaleY - drawHeight) / 2;
+
+    // Tegn billedet
+    ctx.drawImage(img, adjustX, adjustY, drawWidth, drawHeight);
+
+    // Refleksion, hvis slået til
+    if (toggleReflection.checked) {
+      ctx.save();
+      ctx.translate(adjustX, adjustY + drawHeight * 2);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = opacitySlider.value;
+      ctx.drawImage(img, 0, 0, drawWidth, drawHeight);
+      ctx.restore();
     }
   });
 
-  const midX = containerRect.width / 2;
-  const midY = containerRect.height / 2;
+  // Download
+  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
+  const link = document.createElement("a");
+  link.download = `studio-layout.${fileFormat}`;
+  link.href = dataUrl;
+  link.click();
+}
 
-  if (Math.abs(elCenterX - midX) < 10) {
-    snapX = midX - elWidth / 2;
-    showVerticalSnap = true;
+// Opdater lysretning og refleksion ved start
+updateLightDirection();
+updateReflectionOpacity();
+
+bgToggle.addEventListener("change", () => {
+  if (bgToggle.value === "white") {
+    previewArea.style.background = "#fff";
+  } else {
+    previewArea.style.background = "transparent";
   }
-
-  if (Math.abs(elCenterY - midY) < 10) {
-    snapY = midY - elHeight / 2;
-    showHorizontalSnap = true;
-  }
-
-  el.style.left = `${snapX}px`;
-  el.style.top = `${snapY}px`;
-
-  verticalLine.style.left = `${snapX + elWidth / 2}px`;
-  horizontalLine.style.top = `${snapY + elHeight / 2}px`;
-  verticalLine.style.display = showVerticalSnap ? "block" : "none";
-  horizontalLine.style.display = showHorizontalSnap ? "block" : "none";
-});
-
-window.addEventListener("mouseup", () => {
-  if (dragData.draggingEl) {
-    dragData.draggingEl.style.zIndex = 1;
-  }
-  dragData.draggingEl = null;
 });
