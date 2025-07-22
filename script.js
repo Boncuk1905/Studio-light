@@ -1,391 +1,428 @@
 const uploadInput = document.getElementById("imageUpload");
 const previewArea = document.getElementById("previewArea");
-const canvas = document.getElementById("exportCanvas");
+const canvasElement = document.getElementById("exportCanvas");
 const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
-const bgToggle = document.getElementById("bgToggle");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
+const bgToggle = document.getElementById("bgToggle");
+const reflectionToggle = document.getElementById("reflectionToggle");
+const showGuidesCheckbox = document.getElementById("showGuides");
 const clearBtn = document.getElementById("clearBtn");
 const downloadBtn = document.getElementById("downloadBtn");
-const toggleReflectionCheckbox = document.getElementById("toggleReflection");
-const toggleGridCheckbox = document.getElementById("toggleGrid");
-const toggleCenterLinesBtn = document.getElementById("toggleCenterLinesBtn");
 
-let dragging = null;
-let offset = { x: 0, y: 0 };
-let resizing = null;
-let resizeStart = null;
-let images = [];
-let showSnapLines = true;
-let showReflection = true;
-let showCenterLines = false;
+let dragData = {
+  draggingEl: null,
+  offsetX: 0,
+  offsetY: 0,
+};
 
-// Upload billeder
-uploadInput.addEventListener("change", e => {
-  const files = [...e.target.files];
-  files.forEach((file, i) => {
+let resizeData = {
+  resizingEl: null,
+  startX: 0,
+  startY: 0,
+  startWidth: 0,
+  startHeight: 0,
+};
+
+let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
+
+const SNAP_DISTANCE = 10;
+
+uploadInput.addEventListener("change", handleUpload);
+opacitySlider.addEventListener("input", updateReflectionOpacity);
+lightAngleSlider.addEventListener("input", updateLightDirection);
+bgToggle.addEventListener("change", updateBackground);
+reflectionToggle.addEventListener("change", () => {
+  updateReflectionOpacity();
+});
+showGuidesCheckbox.addEventListener("change", updateGuideLinesToggle);
+clearBtn.addEventListener("click", clearImages);
+downloadBtn.addEventListener("click", exportLayout);
+
+function handleUpload(event) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  files.forEach((file) => {
     const reader = new FileReader();
-    reader.onload = event => {
-      addImage(event.target.result);
+    reader.onload = (e) => {
+      const url = e.target.result;
+      createImageWrapper(url);
     };
     reader.readAsDataURL(file);
   });
-  e.target.value = ""; // reset input
-});
+  // Clear input for next upload
+  uploadInput.value = "";
+}
 
-// Tilføj billede til preview
-function addImage(src) {
+function createImageWrapper(url) {
   const wrapper = document.createElement("div");
   wrapper.className = "image-wrapper";
-  wrapper.style.left = "10px";
-  wrapper.style.top = "10px";
+  wrapper.style.left = "20px";
+  wrapper.style.top = "20px";
+  wrapper.style.width = "200px";
+  wrapper.style.height = "auto";
+  wrapper.style.position = "absolute";
 
   const img = document.createElement("img");
-  img.src = src;
-  img.style.width = "200px";
-  img.style.height = "auto";
+  img.src = url;
   img.draggable = false;
 
-  const reflection = document.createElement("img");
-  reflection.src = src;
-  reflection.className = "reflection";
-  reflection.style.opacity = opacitySlider.value;
+  img.onload = () => {
+    // Sæt højde så prop. bevares ved fast bredde
+    const ratio = img.naturalHeight / img.naturalWidth;
+    wrapper.style.height = `${200 * ratio}px`;
+  };
 
   wrapper.appendChild(img);
-  wrapper.appendChild(reflection);
+
+  // Resize handle
+  const resizeHandle = document.createElement("div");
+  resizeHandle.className = "resize-handle";
+  wrapper.appendChild(resizeHandle);
 
   previewArea.appendChild(wrapper);
-  images.push({wrapper, img, reflection});
 
   makeDraggable(wrapper);
-  makeResizable(wrapper, img);
-
-  updateReflection(wrapper, img, reflection);
+  makeResizable(wrapper, resizeHandle);
+  updateReflectionOpacity();
+  updateLightDirection();
 }
 
-// Flyt billeder
 function makeDraggable(el) {
-  el.addEventListener("mousedown", e => {
-    if (e.button !== 0) return;
-    dragging = el;
-    offset.x = e.clientX - el.getBoundingClientRect().left;
-    offset.y = e.clientY - el.getBoundingClientRect().top;
-    el.classList.add("grabbing");
-  });
-}
+  el.addEventListener("mousedown", (e) => {
+    if (e.target.classList.contains("resize-handle")) return; // Ignore if resizing
 
-window.addEventListener("mousemove", e => {
-  if (dragging) {
     e.preventDefault();
+    dragData.draggingEl = el;
 
-    let x = e.clientX - previewArea.getBoundingClientRect().left - offset.x;
-    let y = e.clientY - previewArea.getBoundingClientRect().top - offset.y;
+    const rect = el.getBoundingClientRect();
+    const containerRect = previewArea.getBoundingClientRect();
 
-    // Clamp til preview area
-    x = Math.max(0, Math.min(x, previewArea.clientWidth - dragging.offsetWidth));
-    y = Math.max(0, Math.min(y, previewArea.clientHeight - dragging.offsetHeight));
+    dragData.offsetX = e.clientX - rect.left;
+    dragData.offsetY = e.clientY - rect.top;
 
-    dragging.style.left = x + "px";
-    dragging.style.top = y + "px";
+    el.classList.add("dragging");
 
-    if (showSnapLines) snapToOtherImages(dragging);
-    updateReflectionPosition(dragging);
-
-  }
-});
-
-window.addEventListener("mouseup", e => {
-  if (dragging) {
-    dragging.classList.remove("grabbing");
-  }
-  dragging = null;
-  removeSnapLines();
-});
-
-// Resize billeder
-function makeResizable(wrapper, img) {
-  const resizer = document.createElement("div");
-  resizer.className = "resizer";
-  wrapper.appendChild(resizer);
-
-  resizer.addEventListener("mousedown", e => {
-    e.stopPropagation();
-    resizing = { wrapper, img };
-    resizeStart = {
-      mouseX: e.clientX,
-      mouseY: e.clientY,
-      width: wrapper.offsetWidth,
-      height: wrapper.offsetHeight,
-      aspectRatio: img.naturalWidth / img.naturalHeight
-    };
-    window.addEventListener("mousemove", resizeMove);
-    window.addEventListener("mouseup", resizeStop);
+    window.addEventListener("mousemove", onDrag);
+    window.addEventListener("mouseup", onStopDrag);
   });
 }
 
-function resizeMove(e) {
-  if (!resizing) return;
+function onDrag(e) {
+  if (!dragData.draggingEl) return;
 
-  let dx = e.clientX - resizeStart.mouseX;
-  let newWidth = resizeStart.width + dx;
-  if (newWidth < 50) newWidth = 50;
-  let newHeight = newWidth / resizeStart.aspectRatio;
-
-  resizing.wrapper.style.width = newWidth + "px";
-  resizing.wrapper.style.height = newHeight + "px";
-  resizing.img.style.width = newWidth + "px";
-  resizing.img.style.height = newHeight + "px";
-
-  updateReflection(resizing.wrapper, resizing.img);
-}
-
-function resizeStop(e) {
-  window.removeEventListener("mousemove", resizeMove);
-  window.removeEventListener("mouseup", resizeStop);
-  resizing = null;
-}
-
-// Reflektion funktion
-opacitySlider.addEventListener("input", () => {
-  images.forEach(({reflection}) => {
-    reflection.style.opacity = opacitySlider.value;
-  });
-});
-
-toggleReflectionCheckbox.addEventListener("change", () => {
-  showReflection = toggleReflectionCheckbox.checked;
-  images.forEach(({reflection}) => {
-    reflection.style.display = showReflection ? "block" : "none";
-  });
-});
-
-lightAngleSlider.addEventListener("input", () => {
-  // Kan udvides til lysvinkel effekt på reflektion
-  // Men vi holder simple for nu
-});
-
-// Baggrunds toggle
-bgToggle.addEventListener("change", () => {
-  previewArea.style.background = bgToggle.value === "white" ? "#fff" : "transparent";
-});
-
-// Clear
-clearBtn.addEventListener("click", () => {
-  images = [];
-  previewArea.innerHTML = "";
-});
-
-// Vis midterlinjer
-toggleCenterLinesBtn.addEventListener("click", () => {
-  showCenterLines = !showCenterLines;
-  if (showCenterLines) {
-    drawCenterLines();
-    toggleCenterLinesBtn.textContent = "Skjul midterlinjer";
-  } else {
-    removeCenterLines();
-    toggleCenterLinesBtn.textContent = "Vis midterlinjer";
-  }
-});
-
-// Snap linjer toggle
-toggleGridCheckbox.addEventListener("change", () => {
-  showSnapLines = toggleGridCheckbox.checked;
-  if (!showSnapLines) removeSnapLines();
-});
-
-// Download
-downloadBtn.addEventListener("click", () => {
-  exportCanvas();
-});
-
-// Opdater reflektion
-function updateReflection(wrapper, img, reflection=null) {
-  if (!reflection) {
-    reflection = wrapper.querySelector(".reflection");
-  }
-  reflection.src = img.src;
-  reflection.style.width = img.style.width;
-  reflection.style.height = img.style.height;
-  reflection.style.opacity = opacitySlider.value;
-  reflection.style.display = showReflection ? "block" : "none";
-  updateReflectionPosition(wrapper);
-}
-
-function updateReflectionPosition(wrapper) {
-  const reflection = wrapper.querySelector(".reflection");
-  if (!reflection) return;
-  reflection.style.top = wrapper.offsetHeight + "px";
-  reflection.style.left = "0px";
-}
-
-// Snap linjer
-function snapToOtherImages(el) {
-  removeSnapLines();
-
-  const snapDistance = 10;
-  const rect = el.getBoundingClientRect();
   const containerRect = previewArea.getBoundingClientRect();
+  const el = dragData.draggingEl;
+  const elRect = el.getBoundingClientRect();
 
-  // Vi snapper til andre wrappers' kanter og midterlinjer
-  images.forEach(({wrapper}) => {
-    if (wrapper === el) return;
+  let x = e.clientX - containerRect.left - dragData.offsetX;
+  let y = e.clientY - containerRect.top - dragData.offsetY;
 
-    const otherRect = wrapper.getBoundingClientRect();
+  // Snap to guides + other images
+  const snap = getSnapPosition(el, x, y);
 
-    // Snap X (venstre, midt, højre)
-    const candidatesX = [
-      otherRect.left,
-      otherRect.left + otherRect.width / 2,
-      otherRect.left + otherRect.width
-    ];
-    const elX = [rect.left, rect.left + rect.width / 2, rect.left + rect.width];
+  x = snap.x;
+  y = snap.y;
 
-    candidatesX.forEach(ox => {
-      elX.forEach((ex, idx) => {
-        if (Math.abs(ex - ox) < snapDistance) {
-          let newLeft = ox - (idx === 0 ? 0 : idx === 1 ? rect.width / 2 : rect.width);
-          newLeft -= containerRect.left;
-          el.style.left = newLeft + "px";
+  el.style.left = x + "px";
+  el.style.top = y + "px";
 
-          drawSnapLine(newLeft + containerRect.left, containerRect.top, newLeft + containerRect.left, containerRect.top + containerRect.height);
-        }
-      });
-    });
-
-    // Snap Y (top, midt, bund)
-    const candidatesY = [
-      otherRect.top,
-      otherRect.top + otherRect.height / 2,
-      otherRect.top + otherRect.height
-    ];
-    const elY = [rect.top, rect.top + rect.height / 2, rect.top + rect.height];
-
-    candidatesY.forEach(oy => {
-      elY.forEach((ey, idx) => {
-        if (Math.abs(ey - oy) < snapDistance) {
-          let newTop = oy - (idx === 0 ? 0 : idx === 1 ? rect.height / 2 : rect.height);
-          newTop -= containerRect.top;
-          el.style.top = newTop + "px";
-
-          drawSnapLine(containerRect.left, newTop + containerRect.top, containerRect.left + containerRect.width, newTop + containerRect.top);
-        }
-      });
-    });
-  });
+  updateGuides(snap.guides);
 }
 
-function drawSnapLine(x1, y1, x2, y2) {
-  const line = document.createElement("div");
-  line.className = "snap-line";
-  line.style.left = x1 + "px";
-  line.style.top = y1 + "px";
-  if (x1 === x2) {
-    // lodret
-    line.style.width = "1px";
-    line.style.height = (y2 - y1) + "px";
-  } else {
-    // vandret
-    line.style.width = (x2 - x1) + "px";
-    line.style.height = "1px";
-  }
-  previewArea.appendChild(line);
-}
+function getSnapPosition(el, x, y) {
+  const guides = [];
+  const wrappers = Array.from(document.querySelectorAll(".image-wrapper")).filter(
+    (w) => w !== el
+  );
 
-function removeSnapLines() {
-  document.querySelectorAll(".snap-line").forEach(el => el.remove());
-}
+  const elRect = {
+    left: x,
+    top: y,
+    right: x + el.offsetWidth,
+    bottom: y + el.offsetHeight,
+    centerX: x + el.offsetWidth / 2,
+    centerY: y + el.offsetHeight / 2,
+  };
 
-function drawCenterLines() {
-  removeCenterLines();
-  const w = previewArea.clientWidth;
-  const h = previewArea.clientHeight;
+  // Snap to mid container
+  const containerCenterX = previewArea.clientWidth / 2;
+  const containerCenterY = previewArea.clientHeight / 2;
 
-  // Lodret midterlinje
-  const vertLine = document.createElement("div");
-  vertLine.className = "center-line";
-  vertLine.style.left = w/2 + "px";
-  vertLine.style.top = "0px";
-  vertLine.style.width = "1px";
-  vertLine.style.height = h + "px";
-  previewArea.appendChild(vertLine);
+  let snapX = elRect.left;
+  let snapY = elRect.top;
 
-  // Vandret midterlinje
-  const horLine = document.createElement("div");
-  horLine.className = "center-line";
-  horLine.style.top = h/2 + "px";
-  horLine.style.left = "0px";
-  horLine.style.width = w + "px";
-  horLine.style.height = "1px";
-  previewArea.appendChild(horLine);
-}
-
-function removeCenterLines() {
-  document.querySelectorAll(".center-line").forEach(el => el.remove());
-}
-
-// Export canvas
-function exportCanvas() {
-  let cw, ch;
-  const sizeVal = canvasSizeSelect.value;
-  if (sizeVal === "auto") {
-    // Fit canvas to previewArea size
-    cw = previewArea.clientWidth;
-    ch = previewArea.clientHeight;
-  } else {
-    const parts = sizeVal.split("x");
-    cw = parseInt(parts[0]);
-    ch = parseInt(parts[1]);
+  // Snap X to container center
+  if (Math.abs(elRect.centerX - containerCenterX) < SNAP_DISTANCE) {
+    snapX = containerCenterX - el.offsetWidth / 2;
+    guides.push({ type: "vertical", pos: containerCenterX });
   }
 
-  canvas.width = cw;
-  canvas.height = ch;
-
-  const ctx = canvas.getContext("2d");
-
-  // Clear canvas
-  ctx.clearRect(0, 0, cw, ch);
-
-  // Baggrund
-  if (bgToggle.value === "white") {
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, cw, ch);
-  } else {
-    ctx.clearRect(0, 0, cw, ch);
+  // Snap Y to container center
+  if (Math.abs(elRect.centerY - containerCenterY) < SNAP_DISTANCE) {
+    snapY = containerCenterY - el.offsetHeight / 2;
+    guides.push({ type: "horizontal", pos: containerCenterY });
   }
 
-  // Tegn billeder i deres positioner
-  images.forEach(({wrapper, img, reflection}) => {
-    const style = getComputedStyle(wrapper);
-    const left = parseFloat(style.left);
-    const top = parseFloat(style.top);
-    const width = wrapper.offsetWidth;
-    const height = wrapper.offsetHeight;
+  // Snap to other images edges and centers
+  wrappers.forEach((w) => {
+    const r = w.getBoundingClientRect();
+    const parentRect = previewArea.getBoundingClientRect();
 
-    // Tegn selve billedet
-    ctx.drawImage(img, left, top, width, height);
+    const other = {
+      left: r.left - parentRect.left,
+      right: r.right - parentRect.left,
+      top: r.top - parentRect.top,
+      bottom: r.bottom - parentRect.top,
+      centerX: r.left - parentRect.left + w.offsetWidth / 2,
+      centerY: r.top - parentRect.top + w.offsetHeight / 2,
+    };
 
-    if (showReflection) {
-      // Tegn reflektion med opacity og flip
-      ctx.save();
-      ctx.globalAlpha = parseFloat(opacitySlider.value);
-      ctx.translate(left, top + height * 2);
-      ctx.scale(1, -1);
-      ctx.drawImage(img, 0, 0, width, height);
-      ctx.restore();
+    // X snap: left, right, center
+    if (Math.abs(elRect.left - other.left) < SNAP_DISTANCE) {
+      snapX = other.left;
+      guides.push({ type: "vertical", pos: other.left });
+    }
+    if (Math.abs(elRect.right - other.right) < SNAP_DISTANCE) {
+      snapX = other.right - el.offsetWidth;
+      guides.push({ type: "vertical", pos: other.right });
+    }
+    if (Math.abs(elRect.centerX - other.centerX) < SNAP_DISTANCE) {
+      snapX = other.centerX - el.offsetWidth / 2;
+      guides.push({ type: "vertical", pos: other.centerX });
+    }
+
+    // Y snap: top, bottom, center
+    if (Math.abs(elRect.top - other.top) < SNAP_DISTANCE) {
+      snapY = other.top;
+      guides.push({ type: "horizontal", pos: other.top });
+    }
+    if (Math.abs(elRect.bottom - other.bottom) < SNAP_DISTANCE) {
+      snapY = other.bottom - el.offsetHeight;
+      guides.push({ type: "horizontal", pos: other.bottom });
+    }
+    if (Math.abs(elRect.centerY - other.centerY) < SNAP_DISTANCE) {
+      snapY = other.centerY - el.offsetHeight / 2;
+      guides.push({ type: "horizontal", pos: other.centerY });
     }
   });
 
-  // Download
+  return { x: snapX, y: snapY, guides };
+}
+
+function updateGuides(guides) {
+  clearGuides();
+  if (!showGuidesCheckbox.checked) return;
+
+  guides.forEach((g) => {
+    const line = document.createElement("div");
+    line.className = "guide-line " + (g.type === "vertical" ? "vertical" : "horizontal");
+    if (g.type === "vertical") {
+      line.style.left = g.pos + "px";
+      line.style.top = 0;
+      line.style.height = "100%";
+    } else {
+      line.style.top = g.pos + "px";
+      line.style.left = 0;
+      line.style.width = "100%";
+    }
+    previewArea.appendChild(line);
+  });
+}
+
+function clearGuides() {
+  document.querySelectorAll(".guide-line").forEach((el) => el.remove());
+}
+
+function onStopDrag() {
+  if (dragData.draggingEl) {
+    dragData.draggingEl.classList.remove("dragging");
+    dragData.draggingEl = null;
+    clearGuides();
+  }
+  window.removeEventListener("mousemove", onDrag);
+  window.removeEventListener("mouseup", onStopDrag);
+}
+
+function makeResizable(wrapper, handle) {
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    resizeData.resizingEl = wrapper;
+    resizeData.startX = e.clientX;
+    resizeData.startY = e.clientY;
+    resizeData.startWidth = wrapper.offsetWidth;
+    resizeData.startHeight = wrapper.offsetHeight;
+
+    window.addEventListener("mousemove", onResize);
+    window.addEventListener("mouseup", onStopResize);
+  });
+}
+
+function onResize(e) {
+  if (!resizeData.resizingEl) return;
+
+  const dx = e.clientX - resizeData.startX;
+  const dy = e.clientY - resizeData.startY;
+
+  // Maintain aspect ratio
+  const aspectRatio = resizeData.startHeight / resizeData.startWidth;
+
+  let newWidth = resizeData.startWidth + dx;
+  let newHeight = newWidth * aspectRatio;
+
+  if (newWidth < 30) newWidth = 30;
+  if (newHeight < 30) newHeight = 30;
+
+  resizeData.resizingEl.style.width = newWidth + "px";
+  resizeData.resizingEl.style.height = newHeight + "px";
+}
+
+function onStopResize() {
+  resizeData.resizingEl = null;
+  window.removeEventListener("mousemove", onResize);
+  window.removeEventListener("mouseup", onStopResize);
+}
+
+function updateReflectionOpacity() {
+  const val = opacitySlider.value;
+  document.querySelectorAll(".image-wrapper").forEach((wrapper) => {
+    const img = wrapper.querySelector("img");
+    if (reflectionToggle.checked) {
+      wrapper.style.boxShadow = `0 10px 15px rgba(0,0,0,${val})`;
+    } else {
+      wrapper.style.boxShadow = "none";
+    }
+  });
+}
+
+function updateLightDirection() {
+  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
+  // Here you could update shadow direction or any lighting effect if you want to extend later
+}
+
+function updateBackground() {
+  if (bgToggle.value === "transparent") {
+    previewArea.style.background = "transparent";
+  } else if (bgToggle.value === "white") {
+    previewArea.style.background = "white";
+  }
+}
+
+function updateGuideLinesToggle() {
+  if (showGuidesCheckbox.checked) {
+    // Do nothing; guides show on drag automatically
+  } else {
+    clearGuides();
+  }
+}
+
+function clearImages() {
+  previewArea.innerHTML = "";
+  clearGuides();
+}
+
+function exportLayout() {
+  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
+  if (!wrappers.length) {
+    alert("Ingen billeder at gemme!");
+    return;
+  }
+
+  let width, height;
+
+  if (canvasSizeSelect.value === "auto") {
+    // Calculate bounding box of all images
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    wrappers.forEach((w) => {
+      const left = parseFloat(w.style.left);
+      const top = parseFloat(w.style.top);
+      const wW = w.offsetWidth;
+      const wH = w.offsetHeight;
+      if (left < minX) minX = left;
+      if (top < minY) minY = top;
+      if (left + wW > maxX) maxX = left + wW;
+      if (top + wH > maxY) maxY = top + wH;
+    });
+    width = maxX - minX;
+    height = maxY - minY;
+  } else {
+    const [w, h] = canvasSizeSelect.value.split("x").map(Number);
+    width = w;
+    height = h;
+  }
+
+  canvasElement.width = width;
+  canvasElement.height = height;
+
+  const ctx = canvasElement.getContext("2d");
+  // Clear background
+  if (bgToggle.value === "transparent") {
+    ctx.clearRect(0, 0, width, height);
+  } else {
+    ctx.fillStyle = bgToggle.value;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // Calculate offset if auto mode
+  let offsetX = 0,
+    offsetY = 0;
+  if (canvasSizeSelect.value === "auto") {
+    let minX = Infinity,
+      minY = Infinity;
+    wrappers.forEach((w) => {
+      const left = parseFloat(w.style.left);
+      const top = parseFloat(w.style.top);
+      if (left < minX) minX = left;
+      if (top < minY) minY = top;
+    });
+    offsetX = -minX;
+    offsetY = -minY;
+  }
+
+  // Draw each image on canvas
+  wrappers.forEach((wrapper) => {
+    const img = wrapper.querySelector("img");
+    const left = parseFloat(wrapper.style.left) + offsetX;
+    const top = parseFloat(wrapper.style.top) + offsetY;
+    const w = wrapper.offsetWidth;
+    const h = wrapper.offsetHeight;
+
+    ctx.save();
+
+    // Draw reflection if toggled
+    if (reflectionToggle.checked) {
+      ctx.globalAlpha = parseFloat(opacitySlider.value);
+      ctx.translate(left + w / 2, top + h * 2);
+      ctx.scale(1, -1);
+      ctx.drawImage(img, -w / 2, 0, w, h);
+      ctx.globalAlpha = 1.0;
+    }
+
+    ctx.drawImage(img, left, top, w, h);
+
+    ctx.restore();
+  });
+
   const mimeType = fileFormatSelect.value === "png" ? "image/png" : "image/webp";
-  canvas.toBlob(blob => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `export.${fileFormatSelect.value}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+  canvasElement.toBlob((blob) => {
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `layout.${fileFormatSelect.value}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      alert("Fejl ved generering af billede.");
+    }
   }, mimeType);
 }
