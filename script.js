@@ -5,15 +5,17 @@ const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
-const toggleBg = document.getElementById("toggleBg");
-const toggleReflection = document.getElementById("toggleReflection");
+const bgColorPicker = document.getElementById("bgColorPicker");
+const toggleGrid = document.getElementById("toggleGrid");
+let showReflection = true;
 
-let dragData = { draggingEl: null, offsetX: 0, offsetY: 0 };
+let dragData = {
+  draggingEl: null,
+  offsetX: 0,
+  offsetY: 0,
+};
+
 let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-
-uploadInput.addEventListener("change", handleUpload);
-opacitySlider.addEventListener("input", updateReflectionOpacity);
-lightAngleSlider.addEventListener("input", updateLightDirection);
 
 function handleUpload(event) {
   const files = Array.from(event.target.files);
@@ -23,35 +25,24 @@ function handleUpload(event) {
     const reader = new FileReader();
     reader.onload = e => {
       const url = e.target.result;
+
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
+      wrapper.style.left = "100px";
+      wrapper.style.top = "100px";
       wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
       const img = document.createElement("img");
       img.src = url;
-      img.onload = () => applyShadow(wrapper, lightAngleRad);
-
-      const tools = document.createElement("div");
-      tools.className = "tools";
-
-      const flipX = document.createElement("button");
-      flipX.textContent = "Flip X";
-      flipX.onclick = () => img.style.transform = img.style.transform.includes("scaleX(-1)") ? "scaleX(1)" : "scaleX(-1)";
-
-      const flipY = document.createElement("button");
-      flipY.textContent = "Flip Y";
-      flipY.onclick = () => img.style.transform = img.style.transform.includes("scaleY(-1)") ? "scaleY(1)" : "scaleY(-1)";
-
-      tools.appendChild(flipX);
-      tools.appendChild(flipY);
+      img.onload = () => {
+        const ratio = img.naturalHeight / img.naturalWidth;
+        wrapper.style.height = `${wrapper.clientWidth * ratio}px`;
+        applyShadow(wrapper, lightAngleRad);
+      };
 
       wrapper.appendChild(img);
-      wrapper.appendChild(tools);
       previewArea.appendChild(wrapper);
-
-      wrapper.style.left = "50px";
-      wrapper.style.top = "50px";
 
       makeDraggable(wrapper);
     };
@@ -59,64 +50,122 @@ function handleUpload(event) {
   });
 }
 
-function updateReflectionOpacity() {
+uploadInput.addEventListener("change", handleUpload);
+opacitySlider.addEventListener("input", () => {
   document.querySelectorAll(".image-wrapper").forEach(wrapper => {
     wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
   });
-}
-
-function updateLightDirection() {
+});
+lightAngleSlider.addEventListener("input", () => {
   lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
   document.querySelectorAll(".image-wrapper").forEach(wrapper => {
     applyShadow(wrapper, lightAngleRad);
   });
-}
+});
+bgColorPicker.addEventListener("input", () => {
+  previewArea.style.backgroundColor = bgColorPicker.value;
+});
+toggleGrid.addEventListener("change", () => {
+  document.querySelectorAll(".guide-line").forEach(el => el.style.display = toggleGrid.checked ? "block" : "none");
+});
 
 function applyShadow(wrapper, angleRad) {
   const distance = 10;
   const xOffset = Math.cos(angleRad) * distance;
   const yOffset = Math.sin(angleRad) * distance;
-  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.2))`;
+  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
 }
 
 function clearImages() {
-  previewArea.innerHTML = "";
   uploadInput.value = "";
+  previewArea.innerHTML = "";
 }
 
 function makeDraggable(el) {
-  el.addEventListener("mousedown", function(e) {
-  if (e.target.tagName === 'BUTTON') return; // ikke når man klikker på tools
-  dragData.draggingEl = el;
-  const rect = el.getBoundingClientRect();
-  dragData.offsetX = e.clientX - rect.left;
-  dragData.offsetY = e.clientY - rect.top;
-  el.style.zIndex = 1000;
-});
+  el.style.position = "absolute";
+
+  el.addEventListener("mousedown", e => {
+    dragData.draggingEl = el;
+    const rect = el.getBoundingClientRect();
+    const container = previewArea.getBoundingClientRect();
+    dragData.offsetX = e.clientX - rect.left;
+    dragData.offsetY = e.clientY - rect.top;
+    el.style.zIndex = 1000;
+  });
 }
 
-window.onmousemove = function(e) {
+window.addEventListener("mousemove", e => {
   if (!dragData.draggingEl) return;
-  const el = dragData.draggingEl;
-  const rect = previewArea.getBoundingClientRect();
-  el.style.left = `${e.clientX - rect.left - dragData.offsetX}px`;
-  el.style.top = `${e.clientY - rect.top - dragData.offsetY}px`;
-};
 
-window.onmouseup = function() {
-  if (dragData.draggingEl) dragData.draggingEl.style.zIndex = 1;
-  dragData.draggingEl = null;
-};
+  const el = dragData.draggingEl;
+  const containerRect = previewArea.getBoundingClientRect();
+
+  let x = e.clientX - containerRect.left - dragData.offsetX;
+  let y = e.clientY - containerRect.top - dragData.offsetY;
+
+  // Snap til midten og andre billeder
+  const snapThreshold = 10;
+  let snapX = null;
+  let snapY = null;
+
+  const elRect = el.getBoundingClientRect();
+  const elCenterX = x + elRect.width / 2;
+  const elCenterY = y + elRect.height / 2;
+
+  document.querySelectorAll(".image-wrapper").forEach(other => {
+    if (other === el) return;
+    const otherRect = other.getBoundingClientRect();
+    const otherX = other.offsetLeft;
+    const otherY = other.offsetTop;
+
+    const otherCenterX = otherX + otherRect.width / 2;
+    const otherCenterY = otherY + otherRect.height / 2;
+
+    if (Math.abs(elCenterX - otherCenterX) < snapThreshold) {
+      snapX = otherCenterX - elRect.width / 2;
+    }
+
+    if (Math.abs(elCenterY - otherCenterY) < snapThreshold) {
+      snapY = otherCenterY - elRect.height / 2;
+    }
+  });
+
+  // Snap til midten af previewArea
+  const midX = previewArea.clientWidth / 2;
+  const midY = previewArea.clientHeight / 2;
+
+  if (Math.abs(elCenterX - midX) < snapThreshold) {
+    snapX = midX - elRect.width / 2;
+  }
+
+  if (Math.abs(elCenterY - midY) < snapThreshold) {
+    snapY = midY - elRect.height / 2;
+  }
+
+  if (snapX !== null) x = snapX;
+  if (snapY !== null) y = snapY;
+
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+});
+
+window.addEventListener("mouseup", () => {
+  if (dragData.draggingEl) {
+    dragData.draggingEl.style.zIndex = 1;
+    dragData.draggingEl = null;
+  }
+});
 
 function exportLayout() {
-  const wrappers = document.querySelectorAll(".image-wrapper");
+  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
   if (!wrappers.length) return;
 
   const opacity = parseFloat(opacitySlider.value);
   const fileFormat = fileFormatSelect.value;
   const size = canvasSizeSelect.value;
-  let canvasWidth, canvasHeight;
+  const background = bgColorPicker.value;
 
+  let canvasWidth, canvasHeight;
   if (size === "auto") {
     const rect = previewArea.getBoundingClientRect();
     canvasWidth = rect.width;
@@ -127,12 +176,11 @@ function exportLayout() {
 
   canvasElement.width = canvasWidth;
   canvasElement.height = canvasHeight;
-
   const ctx = canvasElement.getContext("2d");
-  if (toggleBg.checked) {
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  } else {
-    ctx.fillStyle = "#ffffff";
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  if (background !== "transparent") {
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   }
 
@@ -147,28 +195,24 @@ function exportLayout() {
 
     const x = (rect.left - containerRect.left) * xRatio;
     const y = (rect.top - containerRect.top) * yRatio;
-    const w = rect.width * xRatio;
-    const h = rect.height * yRatio;
+    const width = rect.width * xRatio;
+    const height = rect.height * yRatio;
 
-    ctx.save();
-    ctx.translate(x + w / 2, y + h / 2);
-    if (img.style.transform.includes("scaleX(-1)")) ctx.scale(-1, 1);
-    if (img.style.transform.includes("scaleY(-1)")) ctx.scale(1, -1);
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
-    ctx.restore();
+    ctx.drawImage(img, x, y, width, height);
 
-    if (toggleReflection.checked) {
+    if (showReflection) {
       ctx.save();
-      ctx.translate(x, y + h * 2);
+      ctx.translate(x, y + height * 2);
       ctx.scale(1, -1);
       ctx.globalAlpha = opacity;
-      ctx.drawImage(img, 0, 0, w, h);
+      ctx.drawImage(img, 0, 0, width, height);
       ctx.restore();
     }
   });
 
+  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   const link = document.createElement("a");
-  link.download = `layout.${fileFormat}`;
-  link.href = canvasElement.toDataURL(`image/${fileFormat}`);
+  link.download = `studio-layout.${fileFormat}`;
+  link.href = dataUrl;
   link.click();
 }
