@@ -17,15 +17,19 @@
     <label>Reflection On/Off</label>
     <input type="checkbox" id="reflectionToggle" checked />
 
-    <label>Background Color</label>
-    <input type="color" id="bgColorPicker" value="#00000000" />
+    <label>Background</label>
+    <select id="bgSelect">
+      <option value="transparent" selected>Transparent</option>
+      <option value="#ffffff">Hvid</option>
+      <option value="#000000">Sort</option>
+    </select>
+
+    <button id="toggleSnapLinesBtn">Vis Midterlinjer</button>
 
     <button id="downloadBtn">Download Layout</button>
   </div>
 
-  <div id="previewArea" style="position: relative; width: 800px; height: 600px; border: 1px solid #ccc; background: transparent;">
-    <!-- Billeder vises her -->
-  </div>
+  <div id="previewArea"></div>
 
   <canvas id="exportCanvas" style="display:none;"></canvas>
 
