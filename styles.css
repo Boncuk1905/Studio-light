@@ -1,82 +1,83 @@
-
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f4f4f4;
   margin: 0;
-  padding: 1rem;
-  background: #f9f9f9;
+  padding: 20px;
+  text-align: center;
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 1rem;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.controls label {
+  margin: 0 5px;
 }
 
 #previewArea {
   position: relative;
   width: 100%;
-  height: 80vh;
-  border: 1px solid #ccc;
-  overflow: auto;
-  background-color: transparent;
+  height: 800px;
+  margin: auto;
+  border: 1px dashed #ccc;
+  background-color: var(--bg-color, #ffffff);
+  overflow: hidden;
 }
 
 .image-wrapper {
   position: absolute;
-  cursor: grab;
-  box-sizing: border-box;
-  user-select: none;
-  background-color: transparent;
+  cursor: move;
+  --reflection-opacity: 0.25;
+  --img-url: '';
+  width: 200px;
 }
 
 .image-wrapper img {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
+  height: auto;
   display: block;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
-.resize-handle {
+.image-wrapper::after {
+  content: '';
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 12px;
-  height: 12px;
-  background: #444;
-  cursor: nwse-resize;
-  z-index: 2;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: var(--img-url);
+  background-repeat: no-repeat;
+  background-size: contain;
+  transform: scaleY(-1);
+  opacity: var(--reflection-opacity);
+  filter: blur(2px);
+  pointer-events: none;
 }
 
-.guide-line {
-  position: absolute;
-  background-color: red;
-  z-index: 9999;
+canvas {
   display: none;
 }
 
-.vertical {
+.grid-line {
+  position: absolute;
+  background-color: rgba(0, 128, 255, 0.4);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.grid-line.vertical {
   width: 1px;
-  top: 0;
-  bottom: 0;
+  height: 100%;
 }
 
-.horizontal {
+.grid-line.horizontal {
   height: 1px;
-  left: 0;
-  right: 0;
-}
-
-.solid {
-  background-color: red;
-}
-
-.dotted {
-  border: 1px dotted red;
-  background-color: transparent;
-}
-
-.reflection {
-  transform: scaleY(-1);
-  opacity: 0.25;
+  width: 100%;
 }
