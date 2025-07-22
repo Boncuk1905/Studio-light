@@ -1,94 +1,28 @@
-/* --- Grundlæggende styling --- */
-body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background: #f0f0f0;
-}
-
-h1 {
-  text-align: center;
-}
-
-/* Kontrolpanelet */
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.controls label {
-  margin-left: 10px;
-  margin-right: 5px;
-}
-
-.controls input[type="file"] {
-  margin-right: 20px;
-}
-
-.controls button {
-  cursor: pointer;
-}
-
-/* Preview-området - relativ positionering for absolute billeder */
-#previewArea {
-  position: relative;
-  width: 1280px;  /* Kan justeres eller laves dynamisk */
-  height: 720px;
-  margin: 0 auto;
-  background-color: black;
-  overflow: hidden;
-  border: 2px solid #ccc;
-  user-select: none;
-}
-
-/* Wrapper til hvert billede - absolute for fri placering */
 .image-wrapper {
   position: absolute;
   cursor: grab;
   user-select: none;
-  border: 1px solid transparent;
   box-sizing: border-box;
-  transition: border-color 0.2s;
 }
 
-.image-wrapper:active {
+.image-wrapper.grabbing {
   cursor: grabbing;
+  z-index: 1000;
 }
 
-/* Resizer-håndtag i nederste højre hjørne */
 .resizer {
+  position: absolute;
   width: 12px;
   height: 12px;
-  background: white;
-  border: 1px solid black;
-  position: absolute;
+  background: #333;
+  border-radius: 50%;
   right: 0;
   bottom: 0;
   cursor: se-resize;
+  user-select: none;
   z-index: 10;
 }
 
-/* Snap-linjer (røde, transparente) */
-.snap-line {
-  position: absolute;
-  background-color: red;
-  opacity: 0.7;
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Midterlinjer (blå) */
-.center-line {
-  position: absolute;
-  background-color: blue;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 9998;
-}
-
-/* Reflektion style: spejlvendt og transparent */
 .reflection {
   position: absolute;
   top: 100%;
@@ -97,12 +31,21 @@ h1 {
   transform: scaleY(-1);
   opacity: 0.25;
   pointer-events: none;
-  filter: blur(2px);
-  user-select: none;
-  z-index: 0;
+  filter: blur(3px);
 }
 
-/* Hover effekt til resize håndtag */
-.resizer:hover {
-  background-color: #ddd;
+.snap-line {
+  position: absolute;
+  background: red;
+  opacity: 0.6;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.center-line {
+  position: absolute;
+  background: blue;
+  opacity: 0.4;
+  z-index: 9998;
+  pointer-events: none;
 }
