@@ -1,61 +1,82 @@
 body {
-  margin: 0;
   font-family: sans-serif;
-  background: #f5f5f5;
+  margin: 20px;
+  background: #f4f4f4;
 }
 
 .controls {
-  padding: 10px;
-  background: #ffffff;
-  border-bottom: 1px solid #ccc;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 15px;
   align-items: center;
-  font-size: 14px;
 }
 
-.controls label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+#previewWrapper {
+  position: relative;
+  width: 1280px;
+  height: 1280px;
+  background: repeating-conic-gradient(#eee 0% 25%, #fff 0% 50%) 50% / 40px 40px;
+  border: 1px solid #ccc;
+  overflow: hidden;
 }
 
 #previewArea {
   position: relative;
   width: 100%;
-  height: calc(100vh - 80px);
-  background-color: transparent;
-  overflow: hidden;
+  height: 100%;
+  background: transparent;
 }
 
-/* Billed-wrapper med reflection */
 .image-wrapper {
   position: absolute;
   cursor: move;
-  box-sizing: border-box;
   user-select: none;
+  transform-origin: center center;
 }
 
-.image-wrapper img.main-image {
+.image-wrapper img {
   display: block;
-  width: 100%;
-  height: auto;
+  pointer-events: none;
+  max-width: none;
+}
+
+.resize-handle, .rotate-handle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #0077ff;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.resize-handle {
+  bottom: -6px;
+  right: -6px;
+  cursor: nwse-resize;
+}
+
+.rotate-handle {
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
+
+.reflection {
+  transform: scaleY(-1);
+  opacity: 0.3;
+  filter: blur(1px);
   pointer-events: none;
 }
 
-.image-wrapper canvas.reflection {
-  display: block;
-  pointer-events: none;
-}
-
-/* Snap guide-linjer */
 .guide-line {
   position: absolute;
   background: red;
-  opacity: 0.5;
   z-index: 1000;
-  pointer-events: none;
+  opacity: 0.4;
 }
 
 .guide-line.vertical {
@@ -68,32 +89,21 @@ body {
   width: 100%;
 }
 
-/* Midterlinjer */
 .mid-line {
   position: absolute;
   background: blue;
+  z-index: 1000;
   opacity: 0.4;
-  z-index: 999;
-  pointer-events: none;
 }
 
 .mid-line.vertical {
   width: 1px;
   height: 100%;
   left: 50%;
-  top: 0;
-  transform: translateX(-0.5px);
 }
 
 .mid-line.horizontal {
   height: 1px;
   width: 100%;
   top: 50%;
-  left: 0;
-  transform: translateY(-0.5px);
-}
-
-/* Highlight marker ved snap */
-.snap-highlight {
-  outline: 1px dashed orange;
 }
