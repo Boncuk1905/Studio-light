@@ -5,27 +5,29 @@ const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
-const toggleReflection = document.getElementById("toggleReflection");
-const bgToggle = document.getElementById("bgToggle");
-const toggleCenterLines = document.getElementById("toggleCenterLines");
+const bgColorPicker = document.getElementById("bgColorPicker");
 
 const verticalLine = document.getElementById("verticalLine");
 const horizontalLine = document.getElementById("horizontalLine");
 
-let dragData = { draggingEl: null, offsetX: 0, offsetY: 0 };
-let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-
 uploadInput.addEventListener("change", handleUpload);
 opacitySlider.addEventListener("input", updateReflectionOpacity);
 lightAngleSlider.addEventListener("input", updateLightDirection);
-toggleCenterLines.addEventListener("change", () => {
-  verticalLine.style.display = toggleCenterLines.checked ? "block" : "none";
-  horizontalLine.style.display = toggleCenterLines.checked ? "block" : "none";
-});
+
+let dragData = {
+  draggingEl: null,
+  offsetX: 0,
+  offsetY: 0,
+};
+
+let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
 
 function handleUpload(event) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
+
+  const spacingX = 230;
+  const spacingY = 320;
 
   files.forEach((file, index) => {
     const reader = new FileReader();
@@ -34,18 +36,16 @@ function handleUpload(event) {
 
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
-      wrapper.style.setProperty("--img-url", `url(${url})`);
-      wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
-
-      if (toggleReflection.checked) wrapper.classList.add("reflected");
-
-      wrapper.style.left = `${100 + index * 220}px`;
-      wrapper.style.top = `100px`;
+      wrapper.style.left = `${20 + index * spacingX}px`;
+      wrapper.style.top = `${20 + index * spacingY}px`;
 
       const img = document.createElement("img");
       img.src = url;
 
       img.onload = () => {
+        const ratio = img.naturalHeight / img.naturalWidth;
+        wrapper.style.width = "150px";
+        wrapper.style.height = `${150 * ratio}px`;
         applyShadow(wrapper, lightAngleRad);
       };
 
@@ -75,22 +75,24 @@ function applyShadow(wrapper, angleRad) {
   const distance = 10;
   const xOffset = Math.cos(angleRad) * distance;
   const yOffset = Math.sin(angleRad) * distance;
+
   wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
 }
 
 function clearImages() {
   uploadInput.value = "";
   previewArea.innerHTML = "";
-  previewArea.appendChild(verticalLine);
-  previewArea.appendChild(horizontalLine);
+  previewArea.style.height = "auto";
 }
 
 function makeDraggable(el) {
+  el.style.position = "absolute";
+
   el.addEventListener("mousedown", e => {
     e.preventDefault();
     dragData.draggingEl = el;
+
     const rect = el.getBoundingClientRect();
-    const parentRect = previewArea.getBoundingClientRect();
     dragData.offsetX = e.clientX - rect.left;
     dragData.offsetY = e.clientY - rect.top;
 
@@ -106,24 +108,57 @@ window.addEventListener("mousemove", e => {
   let x = e.clientX - containerRect.left - dragData.offsetX;
   let y = e.clientY - containerRect.top - dragData.offsetY;
 
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
+  const elWidth = el.offsetWidth;
+  const elHeight = el.offsetHeight;
+  const elCenterX = x + elWidth / 2;
+  const elCenterY = y + elHeight / 2;
 
-  // Snap lines to center
-  if (toggleCenterLines.checked) {
-    const elRect = el.getBoundingClientRect();
-    const midX = containerRect.width / 2;
-    const midY = containerRect.height / 2;
+  let snapX = x;
+  let snapY = y;
+  let showVerticalSnap = false;
+  let showHorizontalSnap = false;
 
-    const elCenterX = x + el.offsetWidth / 2;
-    const elCenterY = y + el.offsetHeight / 2;
+  document.querySelectorAll(".image-wrapper").forEach(other => {
+    if (other === el) return;
 
-    verticalLine.style.left = `${midX}px`;
-    horizontalLine.style.top = `${midY}px`;
+    const otherX = other.offsetLeft;
+    const otherY = other.offsetTop;
+    const otherWidth = other.offsetWidth;
+    const otherHeight = other.offsetHeight;
+    const otherCenterX = otherX + otherWidth / 2;
+    const otherCenterY = otherY + otherHeight / 2;
 
-    verticalLine.style.display = Math.abs(elCenterX - midX) < 10 ? "block" : "none";
-    horizontalLine.style.display = Math.abs(elCenterY - midY) < 10 ? "block" : "none";
+    if (Math.abs(elCenterX - otherCenterX) < 10) {
+      snapX = otherX + otherWidth / 2 - elWidth / 2;
+      showVerticalSnap = true;
+    }
+
+    if (Math.abs(elCenterY - otherCenterY) < 10) {
+      snapY = otherY + otherHeight / 2 - elHeight / 2;
+      showHorizontalSnap = true;
+    }
+  });
+
+  const midX = containerRect.width / 2;
+  const midY = containerRect.height / 2;
+
+  if (Math.abs(elCenterX - midX) < 10) {
+    snapX = midX - elWidth / 2;
+    showVerticalSnap = true;
   }
+
+  if (Math.abs(elCenterY - midY) < 10) {
+    snapY = midY - elHeight / 2;
+    showHorizontalSnap = true;
+  }
+
+  el.style.left = `${snapX}px`;
+  el.style.top = `${snapY}px`;
+
+  verticalLine.style.left = `${snapX + elWidth / 2}px`;
+  horizontalLine.style.top = `${snapY + elHeight / 2}px`;
+  verticalLine.style.display = showVerticalSnap ? "block" : "none";
+  horizontalLine.style.display = showHorizontalSnap ? "block" : "none";
 });
 
 window.addEventListener("mouseup", () => {
@@ -132,65 +167,3 @@ window.addEventListener("mouseup", () => {
   }
   dragData.draggingEl = null;
 });
-
-function exportLayout() {
-  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
-  if (!wrappers.length) return;
-
-  const opacity = parseFloat(opacitySlider.value);
-  const fileFormat = fileFormatSelect.value;
-  const size = canvasSizeSelect.value;
-  const bgType = bgToggle.value;
-
-  let canvasWidth, canvasHeight;
-  if (size === "auto") {
-    const rect = previewArea.getBoundingClientRect();
-    canvasWidth = rect.width;
-    canvasHeight = rect.height;
-  } else {
-    [canvasWidth, canvasHeight] = size.split("x").map(Number);
-  }
-
-  canvasElement.width = canvasWidth;
-  canvasElement.height = canvasHeight;
-
-  const ctx = canvasElement.getContext("2d");
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-  ctx.imageSmoothingQuality = "high";
-
-  if (bgType === "white") {
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  }
-
-  const containerRect = previewArea.getBoundingClientRect();
-
-  wrappers.forEach(wrapper => {
-    const img = wrapper.querySelector("img");
-    const rect = wrapper.getBoundingClientRect();
-    const xRatio = canvasWidth / containerRect.width;
-    const yRatio = canvasHeight / containerRect.height;
-
-    const x = (rect.left - containerRect.left) * xRatio;
-    const y = (rect.top - containerRect.top) * yRatio;
-    const width = rect.width * xRatio;
-    const height = rect.height * yRatio;
-
-    ctx.drawImage(img, x, y, width, height);
-
-    if (toggleReflection.checked) {
-      ctx.save();
-      ctx.translate(x, y + height * 2);
-      ctx.scale(1, -1);
-      ctx.globalAlpha = opacity;
-      ctx.drawImage(img, 0, 0, width, height);
-      ctx.restore();
-    }
-  });
-
-  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
-  const link = document.createElement("a");
-  link.download = `studio-layout.${fileFormat}`;
-  link.href = dataUrl;
-  link.click();
-}
