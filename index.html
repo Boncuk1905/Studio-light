@@ -2,59 +2,111 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8" />
-  <title>Trixie Preview Studio</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Billededitor med Reflektion</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+    }
+
+    .controls {
+      padding: 10px;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .controls input[type="file"] {
+      margin-right: 10px;
+    }
+
+    .controls label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #previewArea {
+      position: relative;
+      width: 100%;
+      height: 90vh;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .image-wrapper {
+      position: absolute;
+      box-sizing: border-box;
+    }
+
+    .guide-line,
+    .mid-line {
+      position: absolute;
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .guide-line {
+      background: red;
+      opacity: 0.5;
+    }
+
+    .mid-line {
+      background: blue;
+      opacity: 0.6;
+    }
+  </style>
 </head>
 <body>
-  <h1>🐶 Trixie Product Visualizer</h1>
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*" />
 
-    <label>Reflektion
-      <input type="checkbox" id="reflectionToggle" checked>
+    <label>
+      Reflektionsstyrke:
+      <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.3" />
     </label>
 
-    <label>Opacity
-      <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.3">
+    <label>
+      Baggrund:
+      <input type="color" id="bgColorPicker" value="#ffffff" />
     </label>
 
-    <label>Background
-      <input type="color" id="bgColorPicker" value="#ffffff">
+    <label>
+      Snap til grid:
+      <input type="checkbox" id="toggleGrid" checked />
     </label>
 
-    <label>Transparent BG
-      <input type="checkbox" id="transparentBgToggle">
-    </label>
-
-    <label>Canvas Size
+    <label>
+      Canvas størrelse:
       <select id="canvasSize">
-        <option value="1280x1280">1280×1280</option>
-        <option value="1024x1024">1024×1024</option>
-        <option value="auto">Auto</option>
+        <option value="800x600">800 x 600</option>
+        <option value="1024x768">1024 x 768</option>
+        <option value="1920x1080">1920 x 1080</option>
+        <option value="3000x2000">3000 x 2000</option>
       </select>
     </label>
 
-    <label>Format
+    <label>
+      Format:
       <select id="fileFormat">
-        <option value="webp">WEBP</option>
         <option value="png">PNG</option>
+        <option value="jpeg">JPEG</option>
+        <option value="webp">WEBP</option>
       </select>
     </label>
 
-    <label class="grid-toggle">
-      <input type="checkbox" id="toggleGrid" checked>
-      Vis snap-linjer
-    </label>
-
-    <button id="showCenterLines">Vis midte</button>
-    <button id="clearButton">Clear</button>
-    <button id="downloadButton">Download</button>
+    <button onclick="clearImages()">Ryd</button>
+    <button onclick="exportLayout()">Download</button>
   </div>
 
-  <div id="previewArea">
-    <canvas id="mainCanvas" width="1280" height="1280"></canvas>
-  </div>
+  <div id="previewArea"></div>
 
   <script src="script.js"></script>
 </body>
