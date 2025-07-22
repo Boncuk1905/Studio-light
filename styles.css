@@ -1,15 +1,10 @@
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-  background: #eee;
-}
-
-h1 {
-  margin-bottom: 10px;
 }
 
 .controls {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -17,81 +12,36 @@ h1 {
 }
 
 .controls label {
-  margin-left: 6px;
-  margin-right: 2px;
-  font-weight: bold;
-  user-select: none;
+  margin-left: 8px;
+  margin-right: 4px;
+  white-space: nowrap;
 }
 
 #previewArea {
-  position: relative;
   background: transparent;
-  border: 1px solid #ccc;
-  height: 600px;
+  position: relative;
   overflow: hidden;
   user-select: none;
 }
 
-.image-wrapper {
+#previewArea .image-wrapper {
   position: absolute;
   cursor: grab;
   user-select: none;
-  border: 1px solid transparent;
-  transition: border-color 0.15s;
-  box-sizing: border-box;
+  width: 150px;
+  height: auto;
+  touch-action: none;
 }
 
-.image-wrapper.dragging {
+#previewArea .image-wrapper.dragging {
   cursor: grabbing;
-  border-color: #007bff;
-  z-index: 9999;
 }
 
-.image-wrapper img {
-  display: block;
+#previewArea img {
   width: 100%;
   height: auto;
-  pointer-events: none; /* so mouse events reach wrapper */
-  user-select: none;
-  user-drag: none;
-}
-
-.resize-handle {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #007bff;
-  bottom: 0;
-  right: 0;
-  cursor: se-resize;
-  border-radius: 2px;
-}
-
-.guide-line {
-  position: absolute;
-  background: red;
-  opacity: 0.5;
+  display: block;
   pointer-events: none;
-  z-index: 9998;
+  user-select: none;
+  -webkit-user-drag: none;
 }
-
-.guide-line.horizontal {
-  height: 1px;
-  width: 100%;
-  border-top: 1px dotted red;
-}
-
-.guide-line.vertical {
-  width: 1px;
-  height: 100%;
-  border-left: 1px dotted red;
-}
-
-#previewArea.middle-lines .guide-line.middle-vertical {
-  left: 50%;
-}
-
-#previewArea.middle-lines .guide-line.middle-horizontal {
-  top: 50%;
-}
-
