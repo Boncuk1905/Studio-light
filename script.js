@@ -18,6 +18,16 @@ let dragHoldTimeout = null;
 let canDrag = false;
 let showCenterLines = false;
 
+function toggleCenterLinesFunc() {
+  showCenterLines = !showCenterLines;
+  centerLines.style.display = showCenterLines ? 'block' : 'none';
+}
+
+toggleCenterBtn.addEventListener('click', () => {
+  toggleCenterLinesFunc();
+});
+
+
 let reflectionOn = true;
 
 function createImageWrapper(img) {
@@ -189,24 +199,27 @@ function toggleCenterLinesFunc() {
 
 imageUpload.addEventListener('change', e => {
   const files = Array.from(e.target.files);
+  if (files.length === 0) return;
   files.forEach(file => {
+    if (!file.type.startsWith('image/')) return; // kun billeder
     const reader = new FileReader();
     reader.onload = function(ev) {
       const img = new Image();
       img.onload = function() {
         const wrapper = createImageWrapper(img);
         previewArea.appendChild(wrapper);
-        // Center newly added image
-        wrapper.style.left = (previewArea.clientWidth / 2 - img.naturalWidth / 2) + 'px';
-        wrapper.style.top = (previewArea.clientHeight / 2 - img.naturalHeight / 2) + 'px';
+        // Center billedet i previewArea
+        wrapper.style.left = (previewArea.clientWidth / 2 - (img.naturalWidth * wrapper.scale) / 2) + 'px';
+        wrapper.style.top = (previewArea.clientHeight / 2 - (img.naturalHeight * wrapper.scale) / 2) + 'px';
         images.push(wrapper);
       };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
   });
-  e.target.value = '';
+  e.target.value = ''; // reset input så man kan uploade samme fil igen hvis ønsket
 });
+
 
 previewArea.addEventListener('mousedown', e => {
   if (e.target.tagName !== 'IMG') return;
