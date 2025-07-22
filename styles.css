@@ -18,30 +18,85 @@ body {
 }
 
 #previewArea {
-  background: transparent;
   position: relative;
-  overflow: hidden;
+  width: 900px;
+  height: 600px;
+  border: 1px solid #ccc;
+  background: transparent;
   user-select: none;
+  overflow: hidden;
 }
 
-#previewArea .image-wrapper {
+/* Wrapper til hvert billede */
+.image-wrapper {
   position: absolute;
+  width: 150px;
   cursor: grab;
   user-select: none;
-  width: 150px;
-  height: auto;
   touch-action: none;
+  border: 1px dashed transparent;
+  box-sizing: border-box;
 }
 
-#previewArea .image-wrapper.dragging {
+.image-wrapper.dragging {
   cursor: grabbing;
+  border-color: #3498db;
 }
 
-#previewArea img {
+.image-wrapper.selected {
+  border-color: #e67e22;
+}
+
+/* Billedet */
+.image-wrapper img {
   width: 100%;
   height: auto;
   display: block;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* Snap linjer */
+.snap-line {
+  position: absolute;
+  background: red;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.snap-line.horizontal {
+  height: 1px;
+  width: 100%;
+}
+
+.snap-line.vertical {
+  width: 1px;
+  height: 100%;
+}
+
+/* Midterlinjer */
+#previewArea.show-center-lines::before,
+#previewArea.show-center-lines::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 9000;
+}
+
+#previewArea.show-center-lines::before {
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+#previewArea.show-center-lines::after {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
 }
