@@ -17,36 +17,38 @@
     <label>Light Angle</label>
     <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
 
+    <label>Background</label>
+    <input type="color" id="bgColorPicker" value="#ffffff">
+
     <label>Canvas Size</label>
     <select id="canvasSize">
+      <option value="auto">Auto</option>
       <option value="1280x1280">1280×1280</option>
       <option value="1024x1024">1024×1024</option>
-      <option value="auto">Auto</option>
     </select>
 
     <label>Format</label>
     <select id="fileFormat">
-      <option value="webp">WEBP</option>
       <option value="png">PNG</option>
+      <option value="webp">WEBP</option>
     </select>
 
     <label>
-      <input type="checkbox" id="toggleBg" checked>
-      Transparent background
+      <input type="checkbox" id="toggleGrid" checked>
+      Vis snap-linjer
     </label>
 
     <label>
       <input type="checkbox" id="toggleReflection" checked>
-      Show Reflection
+      Vis refleksion
     </label>
 
-    <button onclick="clearImages()">Clear</button>
+    <button onclick="clearImages()">Ryd</button>
     <button onclick="exportLayout()">Download</button>
   </div>
 
   <div id="previewArea"></div>
-  <canvas id="exportCanvas" style="display:none;"></canvas>
-
+  <canvas id="exportCanvas" style="display: none;"></canvas>
   <script src="script.js"></script>
 </body>
 </html>
