@@ -6,40 +6,36 @@ body {
 }
 
 .controls {
-  margin-bottom: 20px;
-}
-
-.preview-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: center;
+  margin-bottom: 30px;
 }
 
 #previewArea {
   position: relative;
-  border: 1px solid #ccc;
-  margin: auto;
-  background-color: #fff;
+  width: 100%;
   min-height: 800px;
-  width: 90%;
+  border: 1px dashed #ccc;
+  margin: auto;
+  background-color: transparent;
+  overflow: hidden;
 }
 
 .image-wrapper {
   position: absolute;
-  width: 200px;
   cursor: move;
+  --reflection-opacity: 0.25;
 }
 
 .image-wrapper img {
-  width: 100%;
+  max-width: 200px;
+  height: auto;
   display: block;
   border-radius: 10px;
   box-shadow: 0 10px 20px rgba(0,0,0,0.1);
   border: 1px solid #ccc;
 }
 
-.image-wrapper::after {
+/* Reflection */
+.image-wrapper.reflected::after {
   content: '';
   position: absolute;
   top: 100%;
@@ -55,20 +51,25 @@ body {
   pointer-events: none;
 }
 
+/* Guide lines */
 .guide-line {
   position: absolute;
-  background: red;
+  background-color: rgba(0, 122, 255, 0.5);
   z-index: 999;
-}
-
-.guide-line.horizontal {
-  height: 1px;
-  width: 100%;
-  left: 0;
+  display: none;
+  pointer-events: none;
 }
 
 .guide-line.vertical {
   width: 1px;
   height: 100%;
   top: 0;
+  left: 50%;
+}
+
+.guide-line.horizontal {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
 }
