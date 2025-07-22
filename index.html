@@ -2,42 +2,58 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8" />
-  <title>Trixie Product Studio</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>Trixie Preview Studio</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <h1>🐶 Trixie Product Visualizer</h1>
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*" />
-    <label><input type="checkbox" id="reflectionToggle" checked /> Refleksion</label>
-    <label>Reflektionsstyrke <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" /></label>
-    <label>Lysvinkel <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" /></label>
-    <label>Baggrund:
-      <select id="bgType">
-        <option value="transparent">Gennemsigtig</option>
-        <option value="white">Hvid</option>
-      </select>
+
+    <label>Reflektion
+      <input type="checkbox" id="reflectionToggle" checked>
     </label>
-    <label>Størrelse:
+
+    <label>Opacity
+      <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.3">
+    </label>
+
+    <label>Background
+      <input type="color" id="bgColorPicker" value="#ffffff">
+    </label>
+
+    <label>Transparent BG
+      <input type="checkbox" id="transparentBgToggle">
+    </label>
+
+    <label>Canvas Size
       <select id="canvasSize">
         <option value="1280x1280">1280×1280</option>
         <option value="1024x1024">1024×1024</option>
+        <option value="auto">Auto</option>
       </select>
     </label>
-    <label>Filtype:
+
+    <label>Format
       <select id="fileFormat">
-        <option value="png">PNG</option>
         <option value="webp">WEBP</option>
+        <option value="png">PNG</option>
       </select>
     </label>
-    <button onclick="toggleMidGuides()">Vis/skjul midterlinjer</button>
-    <button onclick="clearImages()">Ryd</button>
-    <button onclick="exportLayout()">Download</button>
+
+    <label class="grid-toggle">
+      <input type="checkbox" id="toggleGrid" checked>
+      Vis snap-linjer
+    </label>
+
+    <button id="showCenterLines">Vis midte</button>
+    <button id="clearButton">Clear</button>
+    <button id="downloadButton">Download</button>
   </div>
 
   <div id="previewArea">
-    <canvas id="previewCanvas" width="1280" height="1280"></canvas>
+    <canvas id="mainCanvas" width="1280" height="1280"></canvas>
   </div>
 
   <script src="script.js"></script>
