@@ -1,98 +1,99 @@
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f3f3f3;
   margin: 0;
-  padding: 20px;
-  text-align: center;
-}
-
-h1 {
-  margin-bottom: 10px;
+  font-family: sans-serif;
+  background: #f5f5f5;
 }
 
 .controls {
+  padding: 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #ccc;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
-}
-
-.controls label,
-.controls button,
-.controls select,
-.controls input[type="color"] {
-  margin: 5px;
+  align-items: center;
   font-size: 14px;
 }
 
-#previewArea {
+.controls label {
   display: flex;
-  justify-content: center;
   align-items: center;
-  overflow: auto;
-  border: 2px dashed #ccc;
-  background-color: #fff;
-  padding: 10px;
+  gap: 5px;
+}
+
+#previewArea {
   position: relative;
-  margin: auto;
-  max-width: 100%;
-}
-
-canvas {
-  border: 1px solid #999;
-  background-color: transparent;
-  cursor: grab;
-}
-
-canvas.dragging {
-  cursor: grabbing;
-}
-
-.snap-line {
-  position: absolute;
-  background-color: rgba(0, 153, 255, 0.5);
-  z-index: 999;
-  pointer-events: none;
-}
-
-.snap-line.horizontal {
-  height: 1px;
   width: 100%;
+  height: calc(100vh - 80px);
+  background-color: transparent;
+  overflow: hidden;
 }
 
-.snap-line.vertical {
-  width: 1px;
-  height: 100%;
-}
-
+/* Billed-wrapper med reflection */
 .image-wrapper {
   position: absolute;
+  cursor: move;
+  box-sizing: border-box;
   user-select: none;
-  pointer-events: none;
 }
 
-.reflection {
-  opacity: 0.3;
-  transform: scaleY(-1);
-  filter: blur(2px);
-}
-
-.guideline {
-  position: absolute;
-  background: rgba(255, 0, 0, 0.5);
-  pointer-events: none;
-  z-index: 999;
-}
-
-.guideline.horizontal {
+.image-wrapper img.main-image {
+  display: block;
   width: 100%;
-  height: 1px;
-  left: 0;
+  height: auto;
+  pointer-events: none;
 }
 
-.guideline.vertical {
-  height: 100%;
+.image-wrapper canvas.reflection {
+  display: block;
+  pointer-events: none;
+}
+
+/* Snap guide-linjer */
+.guide-line {
+  position: absolute;
+  background: red;
+  opacity: 0.5;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.guide-line.vertical {
   width: 1px;
+  height: 100%;
+}
+
+.guide-line.horizontal {
+  height: 1px;
+  width: 100%;
+}
+
+/* Midterlinjer */
+.mid-line {
+  position: absolute;
+  background: blue;
+  opacity: 0.4;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.mid-line.vertical {
+  width: 1px;
+  height: 100%;
+  left: 50%;
   top: 0;
+  transform: translateX(-0.5px);
+}
+
+.mid-line.horizontal {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+  transform: translateY(-0.5px);
+}
+
+/* Highlight marker ved snap */
+.snap-highlight {
+  outline: 1px dashed orange;
 }
