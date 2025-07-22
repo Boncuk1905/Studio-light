@@ -1,52 +1,57 @@
 body {
   font-family: sans-serif;
+  background: #f0f0f0;
+  margin: 0;
   padding: 10px;
-  background-color: #f5f5f5;
+}
+
+h1 {
+  text-align: center;
 }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   align-items: center;
-}
-
-#previewContainer {
-  position: relative;
-  border: 1px solid #ccc;
-  background-color: white;
-  min-height: 600px;
-  overflow: hidden;
+  justify-content: center;
 }
 
 #previewArea {
   position: relative;
-  width: 100%;
-  height: 100%;
+  background: white;
+  border: 2px dashed #ccc;
+  margin: auto;
+  width: 90vw;
+  height: 90vh;
+  overflow: hidden;
 }
 
 .image-wrapper {
   position: absolute;
   cursor: grab;
-  transition: box-shadow 0.2s;
+  user-select: none;
 }
 
 .image-wrapper img {
-  display: block;
-  width: 100%;
+  max-width: 100%;
   height: auto;
+  display: block;
+  pointer-events: none;
 }
 
 .image-reflection {
   transform: scaleY(-1);
-  opacity: var(--reflection-opacity, 0.25);
+  opacity: 0.25;
+  filter: blur(1px);
+  margin-top: 2px;
 }
 
 .snap-line {
   position: absolute;
-  background: limegreen;
-  z-index: 9999;
+  background: rgba(0, 128, 255, 0.5);
+  z-index: 999;
   pointer-events: none;
 }
 
@@ -62,22 +67,22 @@ body {
 
 .center-guide {
   position: absolute;
-  background: rgba(0,0,255,0.3);
-  pointer-events: none;
-  z-index: 1000;
+  background: rgba(0, 0, 255, 0.3);
+  z-index: 10;
   display: none;
+  pointer-events: none;
 }
 
 .center-guide.vertical {
   width: 1px;
-  top: 0;
-  bottom: 0;
+  height: 100%;
   left: 50%;
+  top: 0;
 }
 
 .center-guide.horizontal {
   height: 1px;
-  left: 0;
-  right: 0;
+  width: 100%;
   top: 50%;
+  left: 0;
 }
