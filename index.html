@@ -2,39 +2,38 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8" />
-  <title>Trixie Product Visualizer</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Trixie Preview Studio</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>🐶 Trixie Product Visualizer</h1>
 
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*">
-    <label>Reflektion</label><input type="checkbox" id="reflectionToggle" checked>
-    <label>Reflektionsstyrke</label><input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
-    <label>Lysvinkel</label><input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
-    <label>Baggrundsfarve</label><input type="color" id="bgColorPicker" value="#ffffff">
+    <label>Reflection</label><input type="checkbox" id="reflectionToggle" checked>
+    <label>Reflection Opacity</label><input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
+    <label>Light Angle</label><input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
+    <label>Baggrund</label><input type="color" id="bgColorPicker" value="#ffffff">
     <label>Transparent</label><input type="checkbox" id="transparentToggle">
-    <label>Vis midterlinjer</label><input type="checkbox" id="centerGuideToggle" checked>
-    <label>Canvas-størrelse</label>
+    <label>Canvas Størrelse</label>
     <select id="canvasSize">
       <option value="auto">Auto</option>
       <option value="1280x1280">1280×1280</option>
       <option value="1024x1024">1024×1024</option>
     </select>
-    <label>Filformat</label>
+    <label>Format</label>
     <select id="fileFormat">
       <option value="png">PNG</option>
       <option value="webp">WEBP</option>
     </select>
-    <button onclick="clearImages()">Ryd</button>
+    <label>Vis midte</label><input type="checkbox" id="centerGuideToggle" checked>
+    <button onclick="clearImages()">Clear</button>
     <button onclick="exportLayout()">Download</button>
   </div>
 
-  <div id="previewContainer">
-    <div id="previewArea"></div>
-    <div class="center-guide horizontal"></div>
+  <div id="previewArea">
     <div class="center-guide vertical"></div>
+    <div class="center-guide horizontal"></div>
   </div>
 
   <canvas id="exportCanvas" style="display:none;"></canvas>
