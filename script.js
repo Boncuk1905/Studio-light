@@ -5,24 +5,15 @@ const opacitySlider = document.getElementById("opacitySlider");
 const lightAngleSlider = document.getElementById("lightAngleSlider");
 const canvasSizeSelect = document.getElementById("canvasSize");
 const fileFormatSelect = document.getElementById("fileFormat");
-const bgColorPicker = document.getElementById("bgColorPicker");
-const toggleGrid = document.getElementById("toggleGrid");
+const toggleBg = document.getElementById("toggleBg");
+const toggleReflection = document.getElementById("toggleReflection");
 
+let dragData = { draggingEl: null, offsetX: 0, offsetY: 0 };
 let lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-let showReflection = true;
-let dragData = {};
 
 uploadInput.addEventListener("change", handleUpload);
-opacitySlider.addEventListener("input", updateReflections);
-lightAngleSlider.addEventListener("input", updateShadows);
-bgColorPicker.addEventListener("input", () => {
-  previewArea.style.setProperty("--bg-color", bgColorPicker.value);
-});
-toggleGrid.addEventListener("change", () => {
-  document.querySelectorAll(".grid-line").forEach(line => {
-    line.style.display = toggleGrid.checked ? "block" : "none";
-  });
-});
+opacitySlider.addEventListener("input", updateReflectionOpacity);
+lightAngleSlider.addEventListener("input", updateLightDirection);
 
 function handleUpload(event) {
   const files = Array.from(event.target.files);
@@ -31,27 +22,53 @@ function handleUpload(event) {
   files.forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
+      const url = e.target.result;
       const wrapper = document.createElement("div");
       wrapper.className = "image-wrapper";
-      wrapper.style.left = "100px";
-      wrapper.style.top = "100px";
-      wrapper.style.setProperty("--img-url", `url(${e.target.result})`);
+      wrapper.style.setProperty("--img-url", `url(${url})`);
       wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
 
       const img = document.createElement("img");
-      img.src = e.target.result;
-      img.onload = () => {
-        const ratio = img.naturalHeight / img.naturalWidth;
-        wrapper.style.width = "200px";
-        wrapper.style.height = `${200 * ratio}px`;
-        applyShadow(wrapper, lightAngleRad);
-      };
+      img.src = url;
+      img.onload = () => applyShadow(wrapper, lightAngleRad);
+
+      const tools = document.createElement("div");
+      tools.className = "tools";
+
+      const flipX = document.createElement("button");
+      flipX.textContent = "Flip X";
+      flipX.onclick = () => img.style.transform = img.style.transform.includes("scaleX(-1)") ? "scaleX(1)" : "scaleX(-1)";
+
+      const flipY = document.createElement("button");
+      flipY.textContent = "Flip Y";
+      flipY.onclick = () => img.style.transform = img.style.transform.includes("scaleY(-1)") ? "scaleY(1)" : "scaleY(-1)";
+
+      tools.appendChild(flipX);
+      tools.appendChild(flipY);
 
       wrapper.appendChild(img);
+      wrapper.appendChild(tools);
       previewArea.appendChild(wrapper);
+
+      wrapper.style.left = "50px";
+      wrapper.style.top = "50px";
+
       makeDraggable(wrapper);
     };
     reader.readAsDataURL(file);
+  });
+}
+
+function updateReflectionOpacity() {
+  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
+    wrapper.style.setProperty("--reflection-opacity", opacitySlider.value);
+  });
+}
+
+function updateLightDirection() {
+  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
+  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
+    applyShadow(wrapper, lightAngleRad);
   });
 }
 
@@ -59,112 +76,46 @@ function applyShadow(wrapper, angleRad) {
   const distance = 10;
   const xOffset = Math.cos(angleRad) * distance;
   const yOffset = Math.sin(angleRad) * distance;
-  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.15))`;
-}
-
-function updateReflections() {
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    wrapper.style.setProperty("--reflection-opacity", showReflection ? opacitySlider.value : 0);
-  });
-}
-
-function updateShadows() {
-  lightAngleRad = (lightAngleSlider.value * Math.PI) / 180;
-  document.querySelectorAll(".image-wrapper").forEach(wrapper => {
-    applyShadow(wrapper, lightAngleRad);
-  });
+  wrapper.style.filter = `drop-shadow(${xOffset}px ${yOffset}px 8px rgba(0,0,0,0.2))`;
 }
 
 function clearImages() {
-  uploadInput.value = "";
   previewArea.innerHTML = "";
-  addGridLines();
+  uploadInput.value = "";
 }
 
 function makeDraggable(el) {
-  el.style.position = "absolute";
-
-  el.addEventListener("mousedown", e => {
-    e.preventDefault();
+  el.onmousedown = function(e) {
     dragData.draggingEl = el;
-    dragData.offsetX = e.offsetX;
-    dragData.offsetY = e.offsetY;
-  });
-
-  window.addEventListener("mousemove", e => {
-    if (!dragData.draggingEl) return;
-
-    const containerRect = previewArea.getBoundingClientRect();
-    let x = e.clientX - containerRect.left - dragData.offsetX;
-    let y = e.clientY - containerRect.top - dragData.offsetY;
-
-    // Snapping
-    const snapThreshold = 8;
-    const target = dragData.draggingEl;
-    const targetRect = target.getBoundingClientRect();
-
-    document.querySelectorAll(".image-wrapper").forEach(other => {
-      if (other === target) return;
-      const rect = other.getBoundingClientRect();
-
-      // Snap X center
-      const centerTarget = x + target.offsetWidth / 2;
-      const centerOther = rect.left + rect.width / 2 - containerRect.left;
-      if (Math.abs(centerTarget - centerOther) < snapThreshold) {
-        x = centerOther - target.offsetWidth / 2;
-      }
-
-      // Snap Y center
-      const centerTargetY = y + target.offsetHeight / 2;
-      const centerOtherY = rect.top + rect.height / 2 - containerRect.top;
-      if (Math.abs(centerTargetY - centerOtherY) < snapThreshold) {
-        y = centerOtherY - target.offsetHeight / 2;
-      }
-
-      // Snap top edges
-      const topOther = rect.top - containerRect.top;
-      if (Math.abs(y - topOther) < snapThreshold) {
-        y = topOther;
-      }
-
-      // Snap left edges
-      const leftOther = rect.left - containerRect.left;
-      if (Math.abs(x - leftOther) < snapThreshold) {
-        x = leftOther;
-      }
-    });
-
-    // Snap to canvas center
-    const previewWidth = previewArea.clientWidth;
-    const previewHeight = previewArea.clientHeight;
-
-    if (Math.abs((x + target.offsetWidth / 2) - previewWidth / 2) < snapThreshold) {
-      x = previewWidth / 2 - target.offsetWidth / 2;
-    }
-
-    if (Math.abs((y + target.offsetHeight / 2) - previewHeight / 2) < snapThreshold) {
-      y = previewHeight / 2 - target.offsetHeight / 2;
-    }
-
-    target.style.left = x + "px";
-    target.style.top = y + "px";
-  });
-
-  window.addEventListener("mouseup", () => {
-    dragData.draggingEl = null;
-  });
+    const rect = el.getBoundingClientRect();
+    dragData.offsetX = e.clientX - rect.left;
+    dragData.offsetY = e.clientY - rect.top;
+    el.style.zIndex = 1000;
+  };
 }
 
+window.onmousemove = function(e) {
+  if (!dragData.draggingEl) return;
+  const el = dragData.draggingEl;
+  const rect = previewArea.getBoundingClientRect();
+  el.style.left = `${e.clientX - rect.left - dragData.offsetX}px`;
+  el.style.top = `${e.clientY - rect.top - dragData.offsetY}px`;
+};
+
+window.onmouseup = function() {
+  if (dragData.draggingEl) dragData.draggingEl.style.zIndex = 1;
+  dragData.draggingEl = null;
+};
+
 function exportLayout() {
-  const wrappers = Array.from(document.querySelectorAll(".image-wrapper"));
+  const wrappers = document.querySelectorAll(".image-wrapper");
   if (!wrappers.length) return;
 
-  const fileFormat = fileFormatSelect.value;
   const opacity = parseFloat(opacitySlider.value);
+  const fileFormat = fileFormatSelect.value;
   const size = canvasSizeSelect.value;
-  const bgColor = bgColorPicker.value;
-
   let canvasWidth, canvasHeight;
+
   if (size === "auto") {
     const rect = previewArea.getBoundingClientRect();
     canvasWidth = rect.width;
@@ -177,10 +128,10 @@ function exportLayout() {
   canvasElement.height = canvasHeight;
 
   const ctx = canvasElement.getContext("2d");
-  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-
-  if (bgColor !== "#ffffff") {
-    ctx.fillStyle = bgColor;
+  if (toggleBg.checked) {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  } else {
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   }
 
@@ -188,19 +139,24 @@ function exportLayout() {
 
   wrappers.forEach(wrapper => {
     const img = wrapper.querySelector("img");
-    const wrapperRect = wrapper.getBoundingClientRect();
+    const rect = wrapper.getBoundingClientRect();
 
     const xRatio = canvasWidth / containerRect.width;
     const yRatio = canvasHeight / containerRect.height;
 
-    const x = (wrapperRect.left - containerRect.left) * xRatio;
-    const y = (wrapperRect.top - containerRect.top) * yRatio;
-    const w = wrapper.offsetWidth * xRatio;
-    const h = wrapper.offsetHeight * yRatio;
+    const x = (rect.left - containerRect.left) * xRatio;
+    const y = (rect.top - containerRect.top) * yRatio;
+    const w = rect.width * xRatio;
+    const h = rect.height * yRatio;
 
-    ctx.drawImage(img, x, y, w, h);
+    ctx.save();
+    ctx.translate(x + w / 2, y + h / 2);
+    if (img.style.transform.includes("scaleX(-1)")) ctx.scale(-1, 1);
+    if (img.style.transform.includes("scaleY(-1)")) ctx.scale(1, -1);
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    ctx.restore();
 
-    if (showReflection) {
+    if (toggleReflection.checked) {
       ctx.save();
       ctx.translate(x, y + h * 2);
       ctx.scale(1, -1);
@@ -210,30 +166,8 @@ function exportLayout() {
     }
   });
 
-  const dataUrl = canvasElement.toDataURL(`image/${fileFormat}`, 1.0);
   const link = document.createElement("a");
   link.download = `layout.${fileFormat}`;
-  link.href = dataUrl;
+  link.href = canvasElement.toDataURL(`image/${fileFormat}`);
   link.click();
 }
-
-function addGridLines() {
-  const width = previewArea.clientWidth;
-  const height = previewArea.clientHeight;
-
-  const vertical = document.createElement("div");
-  vertical.className = "grid-line vertical";
-  vertical.style.left = `${width / 2}px`;
-  vertical.style.top = "0";
-
-  const horizontal = document.createElement("div");
-  horizontal.className = "grid-line horizontal";
-  horizontal.style.top = `${height / 2}px`;
-  horizontal.style.left = "0";
-
-  previewArea.appendChild(vertical);
-  previewArea.appendChild(horizontal);
-}
-
-addGridLines();
-updateReflections();
