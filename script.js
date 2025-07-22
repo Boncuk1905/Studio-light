@@ -85,13 +85,14 @@ function clearImages() {
 }
 
 function makeDraggable(el) {
-  el.onmousedown = function(e) {
-    dragData.draggingEl = el;
-    const rect = el.getBoundingClientRect();
-    dragData.offsetX = e.clientX - rect.left;
-    dragData.offsetY = e.clientY - rect.top;
-    el.style.zIndex = 1000;
-  };
+  el.addEventListener("mousedown", function(e) {
+  if (e.target.tagName === 'BUTTON') return; // ikke når man klikker på tools
+  dragData.draggingEl = el;
+  const rect = el.getBoundingClientRect();
+  dragData.offsetX = e.clientX - rect.left;
+  dragData.offsetY = e.clientY - rect.top;
+  el.style.zIndex = 1000;
+});
 }
 
 window.onmousemove = function(e) {
