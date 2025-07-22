@@ -46,8 +46,63 @@ canvas.addEventListener("mousemove", e => {
   const mx = e.clientX - rect.left;
   const my = e.clientY - rect.top;
 
-  selectedImage.x = mx - offsetX;
-  selectedImage.y = my - offsetY;
+  // Snap til center
+  const snapThreshold = 10;
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+
+  let newX = mx - offsetX;
+  let newY = my - offsetY;
+
+  // Snap til center vertikalt
+  if (Math.abs(newX + selectedImage.w / 2 - centerX) < snapThreshold) {
+    newX = centerX - selectedImage.w / 2;
+  }
+
+  // Snap til center horisontalt
+  if (Math.abs(newY + selectedImage.h / 2 - centerY) < snapThreshold) {
+    newY = centerY - selectedImage.h / 2;
+  }
+
+  // Snap til andre billeder
+  for (const img of images) {
+    if (img === selectedImage) continue;
+
+    // Snap til top
+    if (Math.abs(newY - img.y) < snapThreshold) {
+      newY = img.y;
+    }
+
+    // Snap til bund
+    if (Math.abs(newY + selectedImage.h - (img.y + img.h)) < snapThreshold) {
+      newY = img.y + img.h - selectedImage.h;
+    }
+
+    // Snap til venstre
+    if (Math.abs(newX - img.x) < snapThreshold) {
+      newX = img.x;
+    }
+
+    // Snap til højre
+    if (Math.abs(newX + selectedImage.w - (img.x + img.w)) < snapThreshold) {
+      newX = img.x + img.w - selectedImage.w;
+    }
+
+    // Snap til midte (x)
+    const imgCenterX = img.x + img.w / 2;
+    if (Math.abs(newX + selectedImage.w / 2 - imgCenterX) < snapThreshold) {
+      newX = imgCenterX - selectedImage.w / 2;
+    }
+
+    // Snap til midte (y)
+    const imgCenterY = img.y + img.h / 2;
+    if (Math.abs(newY + selectedImage.h / 2 - imgCenterY) < snapThreshold) {
+      newY = imgCenterY - selectedImage.h / 2;
+    }
+  }
+
+  selectedImage.x = newX;
+  selectedImage.y = newY;
 
   draw();
 });
@@ -84,47 +139,55 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  if (showMidGuides) drawMidLines();
-
+  // Reflektioner (før billeder)
   for (const img of images) {
-    drawImageWithReflection(ctx, img.image, img.x, img.y, img.w, img.h, reflectionToggle.checked);
+    if (reflectionToggle.checked) {
+      drawReflection(ctx, img.image, img.x, img.y, img.w, img.h);
+    }
   }
+
+  // Billeder
+  for (const img of images) {
+    ctx.drawImage(img.image, img.x, img.y, img.w, img.h);
+  }
+
+  // Midterlinjer
+  if (showMidGuides) drawMidLines();
 }
 
 function drawMidLines() {
   ctx.strokeStyle = "rgba(0, 0, 255, 0.3)";
+  ctx.lineWidth = 1;
+
+  // Vertikal midterlinje
   ctx.beginPath();
   ctx.moveTo(canvas.width / 2, 0);
   ctx.lineTo(canvas.width / 2, canvas.height);
   ctx.stroke();
 
+  // Horisontal midterlinje
   ctx.beginPath();
   ctx.moveTo(0, canvas.height / 2);
   ctx.lineTo(canvas.width, canvas.height / 2);
   ctx.stroke();
 }
 
-function drawImageWithReflection(ctx, img, x, y, w, h, showReflection) {
+function drawReflection(ctx, img, x, y, w, h) {
+  const opacity = parseFloat(opacitySlider.value);
+  ctx.save();
+  ctx.translate(0, y * 2 + h);
+  ctx.scale(1, -1);
+  ctx.globalAlpha = opacity;
   ctx.drawImage(img, x, y, w, h);
+  ctx.restore();
 
-  if (showReflection) {
-    const opacity = parseFloat(opacitySlider.value);
+  const grad = ctx.createLinearGradient(0, y + h, 0, y + h * 2);
+  grad.addColorStop(0, "rgba(255,255,255,0)");
+  grad.addColorStop(1, bgType.value === "white" ? "#ffffff" : "transparent");
 
-    ctx.save();
-    ctx.translate(0, y * 2 + h);
-    ctx.scale(1, -1);
-    ctx.globalAlpha = opacity;
-    ctx.drawImage(img, x, y, w, h);
-    ctx.restore();
-
-    const grad = ctx.createLinearGradient(0, y + h, 0, y + h * 2);
-    grad.addColorStop(0, "rgba(255,255,255,0)");
-    grad.addColorStop(1, bgType.value === "white" ? "#ffffff" : "transparent");
-
-    ctx.fillStyle = grad;
-    ctx.fillRect(x, y + h, w, h);
-    ctx.globalAlpha = 1.0;
-  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y + h, w, h);
+  ctx.globalAlpha = 1.0;
 }
 
 function exportLayout() {
@@ -140,7 +203,13 @@ function exportLayout() {
   }
 
   for (const img of images) {
-    drawImageWithReflection(tctx, img.image, img.x, img.y, img.w, img.h, reflectionToggle.checked);
+    if (reflectionToggle.checked) {
+      drawReflection(tctx, img.image, img.x, img.y, img.w, img.h);
+    }
+  }
+
+  for (const img of images) {
+    tctx.drawImage(img.image, img.x, img.y, img.w, img.h);
   }
 
   setTimeout(() => {
