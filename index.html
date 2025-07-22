@@ -3,152 +3,55 @@
 <head>
   <meta charset="UTF-8" />
   <title>Trixie Preview Studio</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background-color: #f2f2f2;
-      margin: 0;
-      padding: 0;
-    }
-    h1 {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 20px;
-      justify-content: center;
-      background: #fff;
-      border-bottom: 1px solid #ccc;
-    }
-    .controls label {
-      margin-right: 5px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    #previewArea {
-      position: relative;
-      width: 100%;
-      min-height: 800px;
-      background: transparent;
-      overflow: hidden;
-      border: 1px solid #ccc;
-      user-select: none;
-    }
-    .image-wrapper {
-      position: absolute;
-      cursor: grab;
-      display: inline-block;
-      filter: drop-shadow(2px 2px 6px rgba(0, 0, 0, 0.15));
-      user-select: none;
-      touch-action: none;
-    }
-    .image-wrapper.dragging {
-      cursor: grabbing;
-      z-index: 9999;
-    }
-    .image-wrapper img {
-      max-width: 150px;
-      max-height: 150px;
-      display: block;
-      user-select: none;
-      pointer-events: none;
-    }
-    .guide-line {
-      position: absolute;
-      background-color: rgba(0, 128, 255, 0.6);
-      z-index: 9000;
-      pointer-events: none;
-    }
-    .guide-line.horizontal {
-      height: 1px;
-      width: 100%;
-    }
-    .guide-line.vertical {
-      width: 1px;
-      height: 100%;
-    }
-    #centerLines {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 8000;
-      display: none;
-    }
-    #centerLines .line {
-      position: absolute;
-      background-color: rgba(255, 0, 0, 0.7);
-    }
-    #centerLines .vertical {
-      width: 2px;
-      height: 100%;
-      left: 50%;
-      top: 0;
-      transform: translateX(-50%);
-    }
-    #centerLines .horizontal {
-      height: 2px;
-      width: 100%;
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>🐶 Trixie Product Visualizer</h1>
 
+  <!-- Kontrolpanel til alle funktioner -->
   <div class="controls">
     <input type="file" id="imageUpload" multiple accept="image/*" />
-    <label for="opacitySlider">Reflection Opacity
-      <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
-    </label>
+    <label for="opacitySlider">Reflection Opacity</label>
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
     
-    <label for="lightAngleSlider">Light Angle
-      <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" />
-    </label>
-
-    <label for="bgColorPicker">Background
-      <input type="color" id="bgColorPicker" value="#ffffff" />
-    </label>
-
-    <label>
-      <input type="checkbox" id="transparentToggle" />
-      Transparent baggrund
-    </label>
-
-    <label for="canvasSize">Canvas Size
-      <select id="canvasSize">
-        <option value="auto">Auto</option>
-        <option value="1280x1280">1280×1280</option>
-        <option value="1024x1024">1024×1024</option>
-      </select>
-    </label>
-
-    <label for="fileFormat">Format
-      <select id="fileFormat">
-        <option value="png">PNG</option>
-        <option value="webp">WEBP</option>
-      </select>
-    </label>
-
+    <label for="lightAngleSlider">Light Angle</label>
+    <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" />
+    
+    <label for="bgColorPicker">Background</label>
+    <input type="color" id="bgColorPicker" value="#000000" />
+    
+    <button id="toggleBgButton">Toggle Transparent / White BG</button>
+    
+    <label for="canvasSize">Canvas Size</label>
+    <select id="canvasSize">
+      <option value="auto">Auto</option>
+      <option value="1280x1280">1280×1280</option>
+      <option value="1024x1024">1024×1024</option>
+    </select>
+    
+    <label for="fileFormat">Format</label>
+    <select id="fileFormat">
+      <option value="png">PNG</option>
+      <option value="webp">WEBP</option>
+    </select>
+    
     <button id="clearBtn">Clear</button>
     <button id="downloadBtn">Download</button>
-    <button id="toggleCenterBtn">Vis midte</button>
+    
+    <label class="grid-toggle">
+      <input type="checkbox" id="toggleGrid" checked /> Vis guide-linjer
+    </label>
+    <button id="toggleCenterLinesBtn">Vis midterlinjer</button>
+    
+    <label class="reflection-toggle">
+      <input type="checkbox" id="toggleReflection" checked /> Refleksion ON/OFF
+    </label>
   </div>
 
+  <!-- Preview-område hvor billederne vises -->
   <div id="previewArea"></div>
 
-  <div id="centerLines">
-    <div class="line vertical"></div>
-    <div class="line horizontal"></div>
-  </div>
-
+  <!-- Usynligt canvas til eksport -->
   <canvas id="exportCanvas" style="display:none;"></canvas>
 
   <script src="script.js"></script>
