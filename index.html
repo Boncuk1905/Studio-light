@@ -1,46 +1,54 @@
-<h1>🐶 Trixie Product Visualizer</h1>
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trixie Product Visualizer</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>🐶 Trixie Product Visualizer</h1>
 
-<div class="controls">
-  <input type="file" id="imageUpload" multiple accept="image/*" />
-  
-  <label>Reflection Opacity</label>
-  <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
-  
-  <label>Light Angle</label>
-  <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" />
-  
-  <label>Background</label>
-  <select id="bgToggle">
-    <option value="transparent">Transparent</option>
-    <option value="white">Hvid</option>
-  </select>
+  <div class="controls">
+    <input type="file" id="imageUpload" multiple accept="image/*" />
+    <label for="opacitySlider">Reflection Opacity</label>
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
 
-  <label>Canvas Size</label>
-  <select id="canvasSize">
-    <option value="auto">Auto</option>
-    <option value="1280x1280">1280×1280</option>
-    <option value="1024x1024">1024×1024</option>
-  </select>
+    <label for="lightAngleSlider">Light Angle</label>
+    <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45" />
 
-  <label>Format</label>
-  <select id="fileFormat">
-    <option value="png">PNG</option>
-    <option value="webp">WEBP</option>
-  </select>
+    <label for="bgToggle">Baggrund</label>
+    <select id="bgToggle">
+      <option value="transparent">Transparent</option>
+      <option value="white">Hvid</option>
+    </select>
 
-  <button id="clearBtn">Clear</button>
-  <button id="downloadBtn">Download</button>
-  <button id="toggleCenterLinesBtn">Vis midterlinjer</button>
-  <label>
-    <input type="checkbox" id="toggleReflection" checked /> Reflektion On/Off
-  </label>
-  <label>
-    <input type="checkbox" id="toggleGrid" checked /> Vis Snap Linjer
-  </label>
-</div>
+    <label for="canvasSize">Canvas Size</label>
+    <select id="canvasSize">
+      <option value="auto">Auto</option>
+      <option value="1280x1280">1280×1280</option>
+      <option value="1024x1024">1024×1024</option>
+    </select>
 
-<div id="previewArea" style="position:relative; width:1280px; height:1280px; border:1px solid #ccc; margin-top:10px; background:transparent;">
-  <!-- Her kommer billederne -->
-</div>
+    <label for="fileFormat">Format</label>
+    <select id="fileFormat">
+      <option value="png">PNG</option>
+      <option value="webp">WEBP</option>
+    </select>
 
-<canvas id="exportCanvas" style="display:none;"></canvas>
+    <label for="reflectionToggle">Refleksion</label>
+    <input type="checkbox" id="reflectionToggle" checked />
+
+    <label for="showGuides">Vis guide-linjer</label>
+    <input type="checkbox" id="showGuides" checked />
+
+    <button id="clearBtn">Clear</button>
+    <button id="downloadBtn">Download</button>
+  </div>
+
+  <div id="previewArea"></div>
+  <canvas id="exportCanvas" style="display:none;"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
