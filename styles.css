@@ -1,51 +1,97 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #eee;
+}
+
+h1 {
+  margin-bottom: 10px;
+}
+
+.controls {
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.controls label {
+  margin-left: 6px;
+  margin-right: 2px;
+  font-weight: bold;
+  user-select: none;
+}
+
+#previewArea {
+  position: relative;
+  background: transparent;
+  border: 1px solid #ccc;
+  height: 600px;
+  overflow: hidden;
+  user-select: none;
+}
+
 .image-wrapper {
   position: absolute;
   cursor: grab;
   user-select: none;
+  border: 1px solid transparent;
+  transition: border-color 0.15s;
   box-sizing: border-box;
 }
 
-.image-wrapper.grabbing {
+.image-wrapper.dragging {
   cursor: grabbing;
-  z-index: 1000;
+  border-color: #007bff;
+  z-index: 9999;
 }
 
-.resizer {
+.image-wrapper img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none; /* so mouse events reach wrapper */
+  user-select: none;
+  user-drag: none;
+}
+
+.resize-handle {
   position: absolute;
   width: 12px;
   height: 12px;
-  background: #333;
-  border-radius: 50%;
-  right: 0;
+  background: #007bff;
   bottom: 0;
+  right: 0;
   cursor: se-resize;
-  user-select: none;
-  z-index: 10;
+  border-radius: 2px;
 }
 
-.reflection {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  transform: scaleY(-1);
-  opacity: 0.25;
-  pointer-events: none;
-  filter: blur(3px);
-}
-
-.snap-line {
+.guide-line {
   position: absolute;
   background: red;
-  opacity: 0.6;
-  z-index: 9999;
+  opacity: 0.5;
   pointer-events: none;
+  z-index: 9998;
 }
 
-.center-line {
-  position: absolute;
-  background: blue;
-  opacity: 0.4;
-  z-index: 9998;
-  pointer-events: none;
+.guide-line.horizontal {
+  height: 1px;
+  width: 100%;
+  border-top: 1px dotted red;
 }
+
+.guide-line.vertical {
+  width: 1px;
+  height: 100%;
+  border-left: 1px dotted red;
+}
+
+#previewArea.middle-lines .guide-line.middle-vertical {
+  left: 50%;
+}
+
+#previewArea.middle-lines .guide-line.middle-horizontal {
+  top: 50%;
+}
+
