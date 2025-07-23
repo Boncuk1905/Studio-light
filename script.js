@@ -9,6 +9,8 @@ const transparentToggle = document.getElementById('transparentToggle'); // Check
 const canvasSizeSelect = document.getElementById('canvasSize'); // Vælg canvas størrelse
 const fileFormatSelect = document.getElementById('fileFormat'); // Vælg eksport filformat
 const toggleGridCheckbox = document.getElementById('toggleGrid'); // Checkbox for grid snapping
+const canvasSizeValue = document.getElementById('canvasSize').value; // fx "1280x1280" eller "1024x1024" eller "auto"
+
 
 // ==== Globale tilstandsvariabler ====
 const images = [];  // Array til at gemme alle billede-objekter, som indeholder data og elementer
@@ -328,51 +330,68 @@ function clearImages() {
 
 // ==== Export canvas som billede ====
 function exportLayout() {
-  // Sæt canvas størrelse dynamisk (evt. ud fra valgt størrelse)
-  exportCanvas.width = 1280;
-  exportCanvas.height = 1280;
+  // Hent valgt canvas-størrelse
+  const canvasSizeValue = document.getElementById('canvasSize').value;
+  let width, height;
 
-  // Ryd canvas før ny tegning
-  ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-  // Baggrund - enten hvid eller transparent
-  if(document.getElementById('transparentToggle').checked) {
-    ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+  if (canvasSizeValue === 'auto') {
+    // Hvis "auto", brug previewArea's størrelse
+    const previewRect = previewArea.getBoundingClientRect();
+    width = Math.round(previewRect.width);
+    height = Math.round(previewRect.height);
   } else {
-    ctx.fillStyle = document.getElementById('bgColorPicker').value || '#ffffff';
-    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+    // Ellers parse f.eks. "1280x1280"
+    const parts = canvasSizeValue.split('x');
+    width = parseInt(parts[0], 10);
+    height = parseInt(parts[1], 10);
   }
 
-  // Tegn hvert billede
+  // Sæt canvas størrelse dynamisk
+  exportCanvas.width = width;
+  exportCanvas.height = height;
+
+  // Ryd canvas
+  ctx.clearRect(0, 0, width, height);
+
+  // Tegn baggrund: transparent eller farve
+  if (document.getElementById('transparentToggle').checked) {
+    ctx.clearRect(0, 0, width, height);
+  } else {
+    ctx.fillStyle = document.getElementById('bgColorPicker').value || '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // Tegn alle billeder på canvas
   images.forEach(imgObj => {
-    const {img, x, y, width, height, scaleX, scaleY, rotation, mirror, intensity} = imgObj;
+    const { img, x, y, width: w, height: h, scaleX, scaleY, rotation, mirror, intensity } = imgObj;
 
     ctx.save();
 
     // Flyt til billedets position
     ctx.translate(x, y);
 
-    // Rotation
+    // Rotation i radianer
     ctx.rotate(rotation * Math.PI / 180);
 
-    // Spejling + skalering
+    // Skaler og spejl hvis nødvendigt
     ctx.scale(scaleX * (mirror ? -1 : 1), scaleY);
 
-    // Tegn med opacity/brightness filter (intensity)
+    // Apply brightness filter
     ctx.filter = `brightness(${intensity})`;
 
-    // Tegn billedet med centrum i 0,0 (fordi vi allerede har translate)
-    ctx.drawImage(img, -width / 2, -height / 2, width, height);
+    // Tegn billedet centreret (derfor -w/2, -h/2)
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
 
     ctx.restore();
   });
 
-  // Opret download link
+  // Opret download-link og trig download
   exportCanvas.toBlob(blob => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'trixie-layout.png'; // eller format dynamisk
+    const format = document.getElementById('fileFormat').value || 'png';
+    a.download = 'trixie-layout.' + format;
     a.click();
     URL.revokeObjectURL(a.href);
-  }, 'image/png');
+  }, 'image/' + (document.getElementById('fileFormat').value || 'png'));
 }
