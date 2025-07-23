@@ -1,19 +1,20 @@
-const previewArea = document.getElementById("previewArea");
-const canvas = document.getElementById("exportCanvas");
-const ctx = canvas.getContext("2d");
+// ---------- Del 1: Grundstruktur, upload, drag, snap ----------
 
-const opacitySlider = document.getElementById("opacitySlider");
-const lightAngleSlider = document.getElementById("lightAngleSlider");
-const bgColorPicker = document.getElementById("bgColorPicker");
-const transparentToggle = document.getElementById("transparentToggle");
-const fileFormat = document.getElementById("fileFormat");
-const canvasSizeSelect = document.getElementById("canvasSize");
+// --- Variabler og initialisering ---
+let images = [];  // array af billeder med data { img, x, y, width, height, rotation, showReflection }
+let currentDrag = null;  // reference til det billede, der trækkes
+let offsetX = 0, offsetY = 0; // museoffset for træk
 
-let images = [];
-let currentDrag = null;
-let offsetX, offsetY;
+const canvas = document.getElementById('exportCanvas');
+const ctx = canvas.getContext('2d');
 
-// 📤 Håndter upload
+const previewArea = document.getElementById('previewArea');
+
+let transparentBackground = true;
+let backgroundColor = '#ffffff';
+let reflectionOpacity = 0.25;
+
+// --- Upload billeder ---
 document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
 
 function handleImageUpload(e) {
@@ -22,279 +23,346 @@ function handleImageUpload(e) {
     img.onload = () => addImage(img);
     img.src = URL.createObjectURL(file);
   });
-
-  // Ryd input, så samme billede kan vælges igen
-  e.target.value = "";
 }
 
-// ➕ Tilføj billede med reflektion
 function addImage(img) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "image-wrapper";
-  wrapper.style.position = "absolute";
-  wrapper.style.left = "100px";
-  wrapper.style.top = "100px";
-  wrapper.style.width = img.width + "px";
-  wrapper.style.height = img.height + "px";
-  wrapper.dataset.angle = "0";
-
-  // Selve billedet
-  const imgEl = img.cloneNode();
-  imgEl.className = "main-image";
-  wrapper.appendChild(imgEl);
-
-  // Reflektion (vises spejlvendt)
-  const reflection = img.cloneNode();
-  reflection.className = "reflection";
-  wrapper.appendChild(reflection);
-
-  // Tilføj til preview
-  document.getElementById("previewArea").appendChild(wrapper);
-
-  // Tilføj til images[] array til videre brug (render, export, drag, etc.)
-  images.push({
+  // Default position og størrelse - sæt størrelse som original
+  const imgObj = {
     img,
-    element: wrapper,
     x: 100,
     y: 100,
     width: img.width,
     height: img.height,
     rotation: 0,
     showReflection: true,
-    dragging: false,
+  };
+  images.push(imgObj);
+
+  render();
+}
+
+// --- Mouse events til drag & drop ---
+previewArea.addEventListener('mousedown', e => {
+  const rect = previewArea.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  // Find øverste billede under musen (øverste i array = øverste i z-index)
+  for(let i = images.length - 1; i >= 0; i--) {
+    const img = images[i];
+    if (isPointInImage(mouseX, mouseY, img)) {
+      currentDrag = img;
+      offsetX = mouseX - img.x;
+      offsetY = mouseY - img.y;
+
+      // bring billedet til front
+      images.splice(i, 1);
+      images.push(currentDrag);
+
+      break;
+    }
+  }
+});
+
+previewArea.addEventListener('mousemove', e => {
+  if (!currentDrag) return;
+
+  const rect = previewArea.getBoundingClientRect();
+  let mouseX = e.clientX - rect.left;
+  let mouseY = e.clientY - rect.top;
+
+  // Beregn ny position med offset
+  let newX = mouseX - offsetX;
+  let newY = mouseY - offsetY;
+
+  // Snap til canvas midte (hvis tæt nok)
+  const snapDistance = 10;
+  const canvasMidX = canvas.width / 2;
+  const canvasMidY = canvas.height / 2;
+
+  if (Math.abs(newX - canvasMidX) < snapDistance) newX = canvasMidX;
+  if (Math.abs(newY - canvasMidY) < snapDistance) newY = canvasMidY;
+
+  // Snap til andre billeder (venstre, top)
+  images.forEach(other => {
+    if (other === currentDrag) return;
+
+    // Snap X (venstre/højre kanter)
+    if (Math.abs(newX - other.x) < snapDistance) newX = other.x;
+    if (Math.abs((newX + currentDrag.width) - (other.x + other.width)) < snapDistance) newX = other.x + other.width - currentDrag.width;
+
+    // Snap Y (top/bund kanter)
+    if (Math.abs(newY - other.y) < snapDistance) newY = other.y;
+    if (Math.abs((newY + currentDrag.height) - (other.y + other.height)) < snapDistance) newY = other.y + other.height - currentDrag.height;
   });
 
-  render(); // Tegn opdatering
-}
+  currentDrag.x = newX;
+  currentDrag.y = newY;
 
-  // Resize handle
-  const resize = document.createElement("div");
-  resize.className = "resize-handle";
-  wrapper.appendChild(resize);
-
-  // Rotate handle
-  const rotate = document.createElement("div");
-  rotate.className = "rotate-handle";
-  wrapper.appendChild(rotate);
-
-  // Events
-  wrapper.addEventListener("mousedown", startDrag);
-  resize.addEventListener("mousedown", startResize);
-  rotate.addEventListener("mousedown", startRotate);
-
-  previewArea.appendChild(wrapper);
-  images.push(wrapper);
-}
-
-// -------- DRAG --------
-function startDrag(e) {
-  if (e.target.classList.contains("resize-handle") || e.target.classList.contains("rotate-handle")) return;
-  currentDrag = { target: this, mode: "drag" };
-  offsetX = e.offsetX;
-  offsetY = e.offsetY;
-  document.addEventListener("mousemove", drag);
-  document.addEventListener("mouseup", stopInteraction);
-}
-
-function drag(e) {
-  if (!currentDrag || currentDrag.mode !== "drag") return;
-  const el = currentDrag.target;
-  el.style.left = e.pageX - previewArea.offsetLeft - offsetX + "px";
-  el.style.top = e.pageY - previewArea.offsetTop - offsetY + "px";
   render();
-}
+});
 
-// -------- RESIZE --------
-function startResize(e) {
-  currentDrag = { target: this.parentElement, mode: "resize" };
-  e.stopPropagation();
-  document.addEventListener("mousemove", resize);
-  document.addEventListener("mouseup", stopInteraction);
-}
-
-function resize(e) {
-  const el = currentDrag.target;
-  const rect = el.getBoundingClientRect();
-  const newW = e.pageX - rect.left;
-  const newH = e.pageY - rect.top;
-  el.style.width = newW + "px";
-  el.style.height = newH + "px";
-  render();
-}
-
-// -------- ROTATE --------
-function startRotate(e) {
-  currentDrag = { target: this.parentElement, mode: "rotate", originX: e.pageX, originY: e.pageY };
-  e.stopPropagation();
-  document.addEventListener("mousemove", rotate);
-  document.addEventListener("mouseup", stopInteraction);
-}
-
-function rotate(e) {
-  const el = currentDrag.target;
-  const dx = e.pageX - el.offsetLeft - el.offsetWidth / 2;
-  const dy = e.pageY - el.offsetTop - el.offsetHeight / 2;
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  el.style.transform = `rotate(${angle}deg)`;
-  el.dataset.angle = angle;
-  render();
-}
-
-function stopInteraction() {
-  document.removeEventListener("mousemove", drag);
-  document.removeEventListener("mousemove", resize);
-  document.removeEventListener("mousemove", rotate);
-  document.removeEventListener("mouseup", stopInteraction);
+previewArea.addEventListener('mouseup', e => {
   currentDrag = null;
+});
+
+previewArea.addEventListener('mouseleave', e => {
+  currentDrag = null;
+});
+
+// --- Helper: Tjek om punkt er inde i billede (uden rotation endnu) ---
+function isPointInImage(px, py, imgObj) {
+  return px >= imgObj.x && px <= imgObj.x + imgObj.width &&
+         py >= imgObj.y && py <= imgObj.y + imgObj.height;
 }
-// -------- RENDER --------
+
+// --- Render funktion --- 
 function render() {
-  const size = canvasSizeSelect.value;
-  let w = 1280, h = 1280;
-
-  if (size !== "auto") {
-    [w, h] = size.split("x").map(Number);
-  }
-
-  canvas.width = w;
-  canvas.height = h;
-
-  if (transparentToggle && transparentToggle.checked) {
-    ctx.clearRect(0, 0, w, h);
-  } else {
-    ctx.fillStyle = bgColorPicker.value;
-    ctx.fillRect(0, 0, w, h);
-  }
-
-  images.forEach(wrapper => {
-    const img = wrapper.querySelector("img");
-    const x = parseFloat(wrapper.style.left);
-    const y = parseFloat(wrapper.style.top);
-    const iw = wrapper.offsetWidth;
-    const ih = wrapper.offsetHeight;
-    const angle = parseFloat(wrapper.dataset.angle) || 0;
-    drawImageWithReflection(ctx, img, x, y, iw, ih, angle);
-  });
-}
-
-// -------- DRAW IMAGE + REFLECTION --------
-async function drawImageWithReflection(ctx, img, x, y, w, h, angle) {
-  ctx.save();
-
-  // Move to center of image
-  ctx.translate(x + w / 2, y + h / 2);
-  ctx.rotate((angle * Math.PI) / 180);
-  ctx.drawImage(img, -w / 2, -h / 2, w, h);
-
-  // Reflection
-  const opacity = parseFloat(opacitySlider.value);
-  ctx.scale(1, -1);
-  ctx.globalAlpha = opacity;
-  ctx.drawImage(img, -w / 2, -h / 2 - h - 5, w, h);
-  ctx.globalAlpha = 1;
-
-  ctx.restore();
-}
-
-// -------- DOWNLOAD --------
-function exportLayout() {
-  render();
-
-  const format = fileFormat.value;
-  const link = document.createElement("a");
-  link.download = `trixie-export.${format}`;
-  link.href = canvas.toDataURL(`image/${format}`);
-  link.click();
-}
-
-// -------- CLEAR --------
-function clearImages() {
-  images.forEach(img => img.remove());
-  images = [];
-  render();
-}
-
-function render() {
-  const canvas = document.getElementById('exportCanvas');
-  const ctx = canvas.getContext('2d');
-
-  // Canvas størrelse
-  const [cw, ch] = [canvas.width, canvas.height];
-  ctx.clearRect(0, 0, cw, ch);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   // Baggrund
   if (!transparentBackground) {
     ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, cw, ch);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Tegn hvert billede
-  images.forEach((imgObj) => {
-    const { img, x, y, width, height, rotation, showReflection } = imgObj;
-
+  // Tegn billeder
+  images.forEach(imgObj => {
     ctx.save();
 
-    // Flyt til midten af billedet
-    ctx.translate(x + width / 2, y + height / 2);
-    ctx.rotate(rotation * Math.PI / 180);
-    ctx.drawImage(img, -width / 2, -height / 2, width, height);
+    // Flyt til billedets midte for rotation
+    ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height / 2);
+    ctx.rotate(imgObj.rotation * Math.PI / 180);
+
+    // Tegn billede centreret
+    ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
 
     ctx.restore();
 
-   // Refleksion
-if (showReflection) {
-  ctx.save();
-  ctx.translate(x + width / 2, y + height * 1.5); // Flip omkring bunden
-  ctx.scale(1, -1);
-  ctx.globalAlpha = reflectionOpacity;
-  ctx.drawImage(img, -width / 2, -height / 2, width, height);
-  ctx.restore();
+    // Tegn refleksion under billedet (grundlæggende)
+    if (imgObj.showReflection) {
+      ctx.save();
 
-  // Fade-out på refleksionen
-  const fade = ctx.createLinearGradient(x, y + height, x, y + height + height / 2);
-  fade.addColorStop(0, `rgba(255,255,255,0)`);
-  fade.addColorStop(1, `rgba(255,255,255,1)`);
-  ctx.fillStyle = fade;
-  ctx.globalAlpha = reflectionOpacity;
-  ctx.fillRect(x, y + height, width, height / 2);
-  ctx.globalAlpha = 1;
-}
+      ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height * 1.5);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = reflectionOpacity;
+
+      ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
+
+      ctx.restore();
+    }
   });
 
-  // Midterguides
-  function updateGuides(show) {
-  const previewArea = document.getElementById('previewArea');
+  // TODO: Snap linjer og midterlinje guides (kommer i del 2)
+}
 
-  // Fjern gamle linjer
-  document.querySelectorAll('.guide-line').forEach(g => g.remove());
+// Initial render
+render();
+// ---------- Del 2: Resize, rotation, refleksion fade, UI-opdateringer ----------
 
-  if (!show) return;
+// --- Opacity-slider ---
+document.getElementById("opacitySlider").addEventListener("input", (e) => {
+  reflectionOpacity = parseFloat(e.target.value);
+  render();
+});
 
-  // Lodret midterlinje
-  const vertical = document.createElement('div');
-  vertical.className = 'guide-line';
-  vertical.style.position = 'absolute';
-  vertical.style.left = '50%';
-  vertical.style.top = '0';
-  vertical.style.bottom = '0';
-  vertical.style.width = '1px';
-  vertical.style.backgroundColor = 'red';
-  vertical.style.opacity = '0.4';
-  vertical.style.pointerEvents = 'none';
-  vertical.style.transform = 'translateX(-0.5px)';
-  previewArea.appendChild(vertical);
+// --- Baggrundsfarvevælger ---
+document.getElementById("bgColorPicker").addEventListener("input", (e) => {
+  backgroundColor = e.target.value;
+  render();
+});
 
-  // Vandret midterlinje
-  const horizontal = document.createElement('div');
-  horizontal.className = 'guide-line';
-  horizontal.style.position = 'absolute';
-  horizontal.style.top = '50%';
-  horizontal.style.left = '0';
-  horizontal.style.right = '0';
-  horizontal.style.height = '1px';
-  horizontal.style.backgroundColor = 'red';
-  horizontal.style.opacity = '0.4';
-  horizontal.style.pointerEvents = 'none';
-  horizontal.style.transform = 'translateY(-0.5px)';
-  previewArea.appendChild(horizontal);
+// --- Transparent toggle ---
+document.getElementById("transparentToggle").addEventListener("change", (e) => {
+  transparentBackground = e.target.checked;
+  render();
+});
+
+// --- Canvas size selector ---
+document.getElementById("canvasSize").addEventListener("change", (e) => {
+  const value = e.target.value;
+  if (value === "auto") {
+    // Tilpas til største billede (ekstra funktion hvis du ønsker det)
+    let maxX = 0, maxY = 0;
+    images.forEach(img => {
+      maxX = Math.max(maxX, img.x + img.width);
+      maxY = Math.max(maxY, img.y + img.height);
+    });
+    canvas.width = maxX + 100;
+    canvas.height = maxY + 100;
+  } else {
+    const [w, h] = value.split("x").map(Number);
+    canvas.width = w;
+    canvas.height = h;
+  }
+  render();
+});
+
+// --- Midterguides toggle ---
+document.getElementById("toggleGrid").addEventListener("change", () => {
+  document.body.classList.toggle("show-midlines");
+  render();
+});
+
+// --- Roter billede med mus + tast ---
+previewArea.addEventListener('wheel', (e) => {
+  if (!currentDrag) return;
+
+  e.preventDefault();
+  currentDrag.rotation += (e.deltaY > 0 ? 5 : -5); // 5 grader per scroll
+  render();
+});
+
+// --- Resize med Shift + træk (simple version) ---
+previewArea.addEventListener('mousemove', e => {
+  if (!currentDrag || !e.shiftKey) return;
+
+  const rect = previewArea.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left;
+  const mouseY = e.clientY - rect.top;
+
+  const newWidth = mouseX - currentDrag.x;
+  const newHeight = mouseY - currentDrag.y;
+
+  if (newWidth > 20 && newHeight > 20) {
+    currentDrag.width = newWidth;
+    currentDrag.height = newHeight;
+    render();
+  }
+});
+
+// --- Refleksion fade (gradient) i render() ---
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Baggrund
+  if (!transparentBackground) {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Tegn billeder
+  images.forEach(imgObj => {
+    ctx.save();
+
+    // Roter omkring midten
+    ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height / 2);
+    ctx.rotate(imgObj.rotation * Math.PI / 180);
+    ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
+    ctx.restore();
+
+    // Refleksion
+    if (imgObj.showReflection) {
+      ctx.save();
+      ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height * 1.5);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = reflectionOpacity;
+      ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
+      ctx.restore();
+
+      // Gradient fade
+      const gradient = ctx.createLinearGradient(0, imgObj.y + imgObj.height, 0, imgObj.y + imgObj.height * 1.5);
+      gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
+      gradient.addColorStop(1, `rgba(255,255,255,0)`);
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(imgObj.x, imgObj.y + imgObj.height, imgObj.width, imgObj.height / 2);
+    }
+  });
+
+  updateGuides(document.getElementById("toggleGrid").checked);
+}
+// ---------- Del 3: Download, snap, preview og ryd alt ----------
+
+function exportLayout() {
+  const canvas = document.getElementById("exportCanvas");
+  const ctx = canvas.getContext("2d");
+
+  // Rerender til canvas
+  render();
+
+  const format = document.getElementById("fileFormat").value;
+  const mimeType = format === "webp" ? "image/webp" : "image/png";
+  const link = document.createElement("a");
+  link.download = `layout.${format}`;
+  link.href = canvas.toDataURL(mimeType);
+  link.click();
+}
+
+// --- Ryd alle billeder ---
+function clearImages() {
+  images = [];
+  currentDrag = null;
+  document.getElementById("previewArea").innerHTML = "";
+  render();
+}
+
+// --- Snap til midterlinjer (x og y) ---
+function snapToGuides(x, y, width, height) {
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+  const snapThreshold = 15;
+  const canvasMidX = canvas.width / 2;
+  const canvasMidY = canvas.height / 2;
+
+  let snappedX = x;
+  let snappedY = y;
+
+  const showXGuide = Math.abs(centerX - canvasMidX) < snapThreshold;
+  const showYGuide = Math.abs(centerY - canvasMidY) < snapThreshold;
+
+  document.querySelector(".guide-x").style.left = showYGuide ? `${canvasMidX}px` : "-9999px";
+  document.querySelector(".guide-y").style.top = showXGuide ? `${canvasMidY}px` : "-9999px";
+
+  if (showXGuide) snappedX = canvasMidX - width / 2;
+  if (showYGuide) snappedY = canvasMidY - height / 2;
+
+  return { x: snappedX, y: snappedY };
+}
+
+// --- Opdater guides synligt ---
+function updateGuides(show) {
+  document.querySelector(".guide-x").style.display = show ? "block" : "none";
+  document.querySelector(".guide-y").style.display = show ? "block" : "none";
+}
+
+// --- Drag funktion med snap ---
+previewArea.addEventListener("mousedown", e => {
+  if (e.target.tagName === "IMG") {
+    const wrapper = e.target.parentElement;
+    const index = Array.from(previewArea.children).indexOf(wrapper);
+    currentDrag = images[index];
+
+    const rect = previewArea.getBoundingClientRect();
+    offsetX = e.clientX - rect.left - currentDrag.x;
+    offsetY = e.clientY - rect.top - currentDrag.y;
+
+    previewArea.addEventListener("mousemove", onMouseMove);
+    previewArea.addEventListener("mouseup", onMouseUp);
+  }
+});
+
+function onMouseMove(e) {
+  const rect = previewArea.getBoundingClientRect();
+  let x = e.clientX - rect.left - offsetX;
+  let y = e.clientY - rect.top - offsetY;
+
+  // Snap aktiveret?
+  if (document.getElementById("toggleGrid").checked) {
+    const snap = snapToGuides(x, y, currentDrag.width, currentDrag.height);
+    x = snap.x;
+    y = snap.y;
+  }
+
+  currentDrag.x = x;
+  currentDrag.y = y;
+
+  render();
+}
+
+function onMouseUp() {
+  previewArea.removeEventListener("mousemove", onMouseMove);
+  previewArea.removeEventListener("mouseup", onMouseUp);
+  updateGuides(false);
+  currentDrag = null;
 }
