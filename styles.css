@@ -78,3 +78,19 @@ body {
   cursor: se-resize;
   z-index: 10;
 }
+.image-controls {
+  position: absolute;
+  top: -25px;
+  right: 0;
+  display: flex;
+  gap: 5px;
+}
+
+.image-controls button {
+  background: white;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
