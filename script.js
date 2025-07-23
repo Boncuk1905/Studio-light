@@ -1,14 +1,22 @@
-// ==== Globale variabler ====
-const previewArea = document.getElementById('previewArea');
-const exportCanvas = document.getElementById('exportCanvas');
-const ctx = exportCanvas.getContext('2d');
-const images = [];
+// ==== Globale DOM-elementer ====
+const previewArea = document.getElementById('previewArea');  // Div hvor billeder placeres og manipuleres
+const exportCanvas = document.getElementById('exportCanvas'); // Canvas til eksport
+const ctx = exportCanvas.getContext('2d');                    // Canvas 2D kontekst til tegning
+const imageUpload = document.getElementById('imageUpload');   // Fil-upload input
+const opacitySlider = document.getElementById('opacitySlider'); // Slider til reflektions-intensitet
+const bgColorPicker = document.getElementById('bgColorPicker'); // Baggrundsfarve picker
+const transparentToggle = document.getElementById('transparentToggle'); // Checkbox til transparent bg
+const canvasSizeSelect = document.getElementById('canvasSize'); // Vælg canvas størrelse
+const fileFormatSelect = document.getElementById('fileFormat'); // Vælg eksport filformat
+const toggleGridCheckbox = document.getElementById('toggleGrid'); // Checkbox for grid snapping
 
+// ==== Globale tilstandsvariabler ====
+const images = [];  // Array til at gemme alle billede-objekter, som indeholder data og elementer
 
-let images = []; // Array med alle billed-objekter
-let currentDrag = null;
-let offsetX = 0, offsetY = 0;
-
+let currentDrag = null;  // Hvilket billede der er ved at blive dragget/resized
+let offsetX = 0;         // Offset til drag-bevægelse X
+let offsetY = 0;         // Offset til drag-bevægelse Y
+let zoomLevel = 1;       // Zoom niveau på canvas (hvis implementeret)
 // ==== Event listeners ====
 document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
 document.getElementById('opacitySlider').addEventListener('input', () => {
