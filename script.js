@@ -61,38 +61,42 @@ function handleImageUpload(e) {
 
 // ==== Tilføj billede med wrapper, resize-handle, spejling og drag ====
 function addImage(src) {
-  
   // Opret wrapper div som indeholder billedet + resize håndtag
   const wrapper = document.createElement('div');
-  wrapper.classList.add('image-wrapper'); // Sørg for CSS matcher klassenavnet
-  wrapper.style.position = 'absolute';
-  wrapper.style.cursor = 'move';
+  wrapper.classList.add('image-wrapper'); // Matcher CSS
+  wrapper.style.position = 'absolute';    // For at kunne placere frit
+  wrapper.style.cursor = 'move';          // Mouse cursor ved hover
 
-  // Opret billed-elementet
-  const img = document.createElement('img');
-  img.src = src;
-  img.classList.add('main-image'); // Husk match CSS
-  img.style.userSelect = 'none';
-  img.style.display = 'block'; // Fjerner whitespace under billedet
-  img.style.pointerEvents = 'none'; // Mus-events går til wrapperen
-
-  wrapper.appendChild(img);
-
-  // Resize håndtag
-  const resizeHandle = document.createElement('div');
-  resizeHandle.classList.add('resize-handle');
-  wrapper.appendChild(resizeHandle);
-
-  // Start dimensioner (kan tilpasses)
+  // Sæt startdimensioner
   const startWidth = 150;
   const startHeight = 150;
 
-  // Placér billedet midt i previewArea
+  // Placér billedet i midten af previewArea
   const previewRect = previewArea.getBoundingClientRect();
   const startX = previewRect.width / 2 - startWidth / 2;
   const startY = previewRect.height / 2 - startHeight / 2;
 
-  // Opret objekt til at holde data
+  // Sæt position og størrelse på wrapper
+  wrapper.style.left = startX + 'px';
+  wrapper.style.top = startY + 'px';
+  wrapper.style.width = startWidth + 'px';
+  wrapper.style.height = startHeight + 'px';
+
+  // Opret billed-elementet
+  const img = document.createElement('img');
+  img.src = src;
+  img.classList.add('main-image');  // VIGTIG! For CSS target
+  img.style.userSelect = 'none';
+  img.style.display = 'block';       // Fjerner whitespace under billedet
+  img.style.pointerEvents = 'none';  // Mus events går til wrapper
+  wrapper.appendChild(img);
+
+  // Tilføj resize-håndtag (lille firkant nederst til højre)
+  const resizeHandle = document.createElement('div');
+  resizeHandle.classList.add('resize-handle');
+  wrapper.appendChild(resizeHandle);
+
+  // Opret et billede-objekt til at holde data
   const imgObj = {
     wrapper,
     img,
@@ -107,18 +111,20 @@ function addImage(src) {
     intensity: 1
   };
 
- // Tilføj imgObj til globalt images array
+  // Gem i global images array
   images.push(imgObj);
 
-  // Gør dragbart og resizable
+  // Tilføj wrapper til previewArea i DOM
+  previewArea.appendChild(wrapper);
+
+  // Gør billedet dragbart og resizable
   makeDraggable(wrapper, imgObj);
 
-  // Render
+  // Render billedet med startparametre
   render();
 
   return imgObj;
 }
-
 
 // ==== Drag og resize med håndtag ====
 function makeDraggable(wrapper, imgObj) {
