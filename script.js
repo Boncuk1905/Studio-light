@@ -187,8 +187,51 @@ function clearImages() {
   render();
 }
 
-// -------- VIS MIDTERLINJE --------
-const toggleGrid = document.getElementById("toggleGrid");
-toggleGrid.addEventListener("change", () => {
-  document.body.classList.toggle("show-midlines", toggleGrid.checked);
-});
+function render() {
+  const canvas = document.getElementById('exportCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Canvas størrelse
+  const [cw, ch] = [canvas.width, canvas.height];
+  ctx.clearRect(0, 0, cw, ch);
+
+  // Baggrund
+  if (!transparentBackground) {
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, cw, ch);
+  }
+
+  // Tegn hvert billede
+  images.forEach((imgObj) => {
+    const { img, x, y, width, height, rotation, showReflection } = imgObj;
+
+    ctx.save();
+
+    // Flyt til midten af billedet
+    ctx.translate(x + width / 2, y + height / 2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.drawImage(img, -width / 2, -height / 2, width, height);
+
+    ctx.restore();
+
+    // Refleksion
+    if (showReflection) {
+      ctx.save();
+      ctx.translate(x + width / 2, y + height * 1.5);
+      ctx.scale(1, -1);
+      ctx.globalAlpha = reflectionOpacity;
+      ctx.drawImage(img, -width / 2, -height / 2, width, height);
+      ctx.restore();
+
+      // Fade-out på refleksion
+      const gradient = ctx.createLinearGradient(0, y + height, 0, y + height * 1.5);
+      gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
+      gradient.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y + height, width, height / 2);
+    }
+  });
+
+  // Midterguides
+  updateGuides(document.getElementById("toggleGrid").checked);
+}
