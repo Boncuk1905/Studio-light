@@ -13,6 +13,10 @@ const ctx = canvas.getContext("2d");
 
 // --- Upload billeder ---
 document.getElementById("imageUpload").addEventListener("change", e => {
+  document.getElementById("opacitySlider").addEventListener("input", function () {
+  reflectionOpacity = parseFloat(this.value);
+  render();
+});
   [...e.target.files].forEach(file => {
     const reader = new FileReader();
     reader.onload = evt => {
@@ -166,21 +170,21 @@ function render() {
     ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
     ctx.restore();
 
-    if (obj.showReflection) {
-      ctx.save();
-      ctx.translate(obj.x + obj.width / 2, obj.y + obj.height * 1.5);
-      ctx.scale(1, -1);
-      ctx.globalAlpha = reflectionOpacity;
-      ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
-      ctx.restore();
+   // Refleksion
+if (showReflection) {
+  ctx.save();
+  ctx.translate(x + width / 2, y + height * 1.5);
+  ctx.scale(1, -1);
+  ctx.globalAlpha = reflectionOpacity;
+  ctx.drawImage(img, -width / 2, -height / 2, width, height);
+  ctx.restore();
 
-      const gradient = ctx.createLinearGradient(0, obj.y + obj.height, 0, obj.y + obj.height * 1.5);
-      gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
-      gradient.addColorStop(1, `rgba(255,255,255,0)`);
-      ctx.fillStyle = gradient;
-      ctx.fillRect(obj.x, obj.y + obj.height, obj.width, obj.height / 2);
-    }
-  });
+  // Fade-out på refleksion
+  const gradient = ctx.createLinearGradient(0, y + height, 0, y + height * 1.5);
+  gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y + height, width, height / 2);
 }
 
 // --- UI kontroller ---
