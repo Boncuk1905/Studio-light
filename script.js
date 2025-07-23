@@ -162,15 +162,6 @@ function makeDraggable(wrapper, imgObj) {
   }
 }
 
-  function onMouseMove(e) {
-    const previewRect = previewArea.getBoundingClientRect();
-    const mouseX = e.clientX - previewRect.left;
-    const mouseY = e.clientY - previewRect.top;
-
-    if (dragging) {
-      let newX = mouseX - offsetX;
-      let newY = mouseY - offsetY;
-
       // Snap til midten hvis ønsket
       if (document.getElementById("toggleGrid")?.checked) {
         const snap = snapToGuides(newX, newY, imgObj.width, imgObj.height);
@@ -203,14 +194,6 @@ function makeDraggable(wrapper, imgObj) {
       render();
     }
   }
-
-  function onMouseUp() {
-    dragging = false;
-    resizing = false;
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  }
-}
 
 function updateWrapperStyle(imgObj) {
   const { wrapper, x, y, width, height, rotation, reflection } = imgObj;
