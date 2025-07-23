@@ -126,6 +126,7 @@ function makeDraggable(wrapper, imgObj) {
     document.addEventListener("mouseup", onMouseUp);
   });
 
+  // Mouse Move
   function onMouseMove(e) {
     const previewRect = previewArea.getBoundingClientRect();
 
@@ -153,12 +154,13 @@ function makeDraggable(wrapper, imgObj) {
 
     render();
   }
-
+// mouse Up
   function onMouseUp() {
     isDragging = false;
     isResizing = false;
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
+    UpdateGuides(false);
   }
 }
 
