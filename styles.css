@@ -65,3 +65,16 @@ body {
   right: 0;
   top: -9999px;
 }
+/* --- Resize handle i hjørnet --- */
+.resize-handle {
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border: 2px solid white;
+  border-radius: 50%;
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  cursor: se-resize;
+  z-index: 10;
+}
