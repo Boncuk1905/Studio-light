@@ -102,51 +102,45 @@ previewArea.addEventListener('mousedown', e => {
   }
 });
 
-previewArea.addEventListener('mousemove', e => {
-  if (!currentDrag) return;
+previewArea.addEventListener("mousedown", e => {
+  if (e.target.tagName === "IMG") {
+    const wrapper = e.target.parentElement;
+    const index = Array.from(previewArea.children).indexOf(wrapper);
+    currentDrag = images[index];
 
+    const rect = previewArea.getBoundingClientRect();
+    offsetX = e.clientX - rect.left - currentDrag.x;
+    offsetY = e.clientY - rect.top - currentDrag.y;
+
+    previewArea.addEventListener("mousemove", onMouseMove);
+    previewArea.addEventListener("mouseup", onMouseUp);
+  }
+});
+
+function onMouseMove(e) {
   const rect = previewArea.getBoundingClientRect();
-  let mouseX = e.clientX - rect.left;
-  let mouseY = e.clientY - rect.top;
+  let x = e.clientX - rect.left - offsetX;
+  let y = e.clientY - rect.top - offsetY;
 
-  // Beregn ny position med offset
-  let newX = mouseX - offsetX;
-  let newY = mouseY - offsetY;
+  if (document.getElementById("toggleGrid").checked) {
+    const snap = snapToGuides(x, y, currentDrag.width, currentDrag.height);
+    x = snap.x;
+    y = snap.y;
+  }
 
-  // Snap til canvas midte (hvis tæt nok)
-  const snapDistance = 10;
-  const canvasMidX = canvas.width / 2;
-  const canvasMidY = canvas.height / 2;
-
-  if (Math.abs(newX - canvasMidX) < snapDistance) newX = canvasMidX;
-  if (Math.abs(newY - canvasMidY) < snapDistance) newY = canvasMidY;
-
-  // Snap til andre billeder (venstre, top)
-  images.forEach(other => {
-    if (other === currentDrag) return;
-
-    // Snap X (venstre/højre kanter)
-    if (Math.abs(newX - other.x) < snapDistance) newX = other.x;
-    if (Math.abs((newX + currentDrag.width) - (other.x + other.width)) < snapDistance) newX = other.x + other.width - currentDrag.width;
-
-    // Snap Y (top/bund kanter)
-    if (Math.abs(newY - other.y) < snapDistance) newY = other.y;
-    if (Math.abs((newY + currentDrag.height) - (other.y + other.height)) < snapDistance) newY = other.y + other.height - currentDrag.height;
-  });
-
-  currentDrag.x = newX;
-  currentDrag.y = newY;
+  currentDrag.x = x;
+  currentDrag.y = y;
 
   render();
-});
+}
 
-previewArea.addEventListener('mouseup', e => {
+function onMouseUp() {
+  previewArea.removeEventListener("mousemove", onMouseMove);
+  previewArea.removeEventListener("mouseup", onMouseUp);
+  updateGuides(false);
   currentDrag = null;
-});
+}
 
-previewArea.addEventListener('mouseleave', e => {
-  currentDrag = null;
-});
 
 // --- Helper: Tjek om punkt er inde i billede (uden rotation endnu) ---
 function isPointInImage(px, py, imgObj) {
