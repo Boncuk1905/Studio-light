@@ -74,15 +74,14 @@ function addImage(src) {
   const startHeight = 150;
 
   // Placér billedet i midten af previewArea
-const startX = previewArea.offsetWidth / 2 - startWidth / 2;
-const startY = previewArea.offsetHeight / 2 - startHeight / 2;
-
+  const startX = previewArea.clientWidth / 2 - startWidth / 2;
+  const startY = previewArea.clientHeight / 2 - startHeight / 2;
 
   // Sæt position og størrelse på wrapper
- wrapper.style.left = startX + 'px';
-wrapper.style.top = startY + 'px';
-wrapper.style.width = startWidth + 'px';
-wrapper.style.height = startHeight + 'px';
+  wrapper.style.left = startX + 'px';
+  wrapper.style.top = startY + 'px';
+  wrapper.style.width = startWidth + 'px';
+  wrapper.style.height = startHeight + 'px';
 
   // Opret billed-elementet
   const img = document.createElement('img');
@@ -308,20 +307,20 @@ function updateGuides() {
   const existingGuides = previewArea.querySelectorAll('.guide-line');
   existingGuides.forEach(g => g.remove());
 
-  // Tilføj lodret midterlinje
-  const verticalGuide = document.createElement('div');
-  verticalGuide.classList.add('guide-line', 'vertical');
-  previewArea.appendChild(verticalGuide);
+// Tilføj lodret midterlinje
+const verticalGuide = document.createElement('div');
+verticalGuide.classList.add('guide-line', 'vertical');
+previewArea.appendChild(verticalGuide);
 
-  // Tilføj horisontal midterlinje
-  const horizontalGuide = document.createElement('div');
-  horizontalGuide.classList.add('guide-line', 'horizontal');
-  previewArea.appendChild(horizontalGuide);
+// Tilføj horisontal midterlinje
+const horizontalGuide = document.createElement('div');
+horizontalGuide.classList.add('guide-line', 'horizontal');
+previewArea.appendChild(horizontalGuide);
 }
 
 // ==== Clear alle billeder ====
 function clearImages() {
-  images = [];
+  images.length = 0; // Ryd array
   while(previewArea.firstChild) {
     previewArea.removeChild(previewArea.firstChild);
   }
