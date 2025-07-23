@@ -47,45 +47,40 @@ function handleImageUpload(e) {
 
 // ==== Tilføj billede med wrapper, resize-handle, spejling og drag ====
 function addImage(src) {
-  // Wrapper til billede + resize håndtag + refleksion
+  // Opret wrapper div som indeholder billedet + resize håndtag
   const wrapper = document.createElement('div');
-  wrapper.classList.add('image-wrapper');
+  wrapper.classList.add('image-wrapper'); // Sørg for CSS matcher klassenavnet
   wrapper.style.position = 'absolute';
   wrapper.style.cursor = 'move';
 
-  // Billedet
+  // Opret billed-elementet
   const img = document.createElement('img');
   img.src = src;
-  img.classList.add('main-image');
+  img.classList.add('main-image'); // Husk match CSS
   img.style.userSelect = 'none';
-  img.style.pointerEvents = 'none';
-  img.style.display = 'block';
+  img.style.display = 'block'; // Fjerner whitespace under billedet
+  img.style.pointerEvents = 'none'; // Mus-events går til wrapperen
 
-  // Reflektions-overlay (spejl)
-  const reflection = document.createElement('div');
-  reflection.classList.add('reflection');
+  wrapper.appendChild(img);
 
-  // Resize håndtag (nederste højre hjørne)
+  // Resize håndtag
   const resizeHandle = document.createElement('div');
   resizeHandle.classList.add('resize-handle');
-
-  // Append alle til wrapper
-  wrapper.appendChild(img);
-  wrapper.appendChild(reflection);
   wrapper.appendChild(resizeHandle);
 
-  // Startværdier
+  // Start dimensioner (kan tilpasses)
   const startWidth = 150;
   const startHeight = 150;
-  const previewRect = previewArea.getBoundingClientRect();
-  const startX = (previewRect.width - startWidth) / 2;
-  const startY = (previewRect.height - startHeight) / 2;
 
-  // Objekt til billedets tilstand
+  // Placér billedet midt i previewArea
+  const previewRect = previewArea.getBoundingClientRect();
+  const startX = previewRect.width / 2 - startWidth / 2;
+  const startY = previewRect.height / 2 - startHeight / 2;
+
+  // Opret objekt til at holde data
   const imgObj = {
     wrapper,
     img,
-    reflection,
     x: startX,
     y: startY,
     width: startWidth,
@@ -94,18 +89,24 @@ function addImage(src) {
     scaleX: 1,
     scaleY: 1,
     mirror: false,
-    intensity: parseFloat(document.getElementById('opacitySlider').value)
+    intensity: 1
   };
 
+  // Tilføj til globalt array
   images.push(imgObj);
+
+  // Tilføj til DOM
   previewArea.appendChild(wrapper);
 
-  // Tilføj drag + resize funktionalitet
+  // Gør dragbart og resizable
   makeDraggable(wrapper, imgObj);
 
+  // Render
   render();
+
   return imgObj;
 }
+
 
 // ==== Drag og resize med håndtag ====
 function makeDraggable(wrapper, imgObj) {
