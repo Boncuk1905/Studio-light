@@ -107,17 +107,56 @@ function addImage(img) {
 }
 // === Drag, Snap & Resize ===
 function makeDraggable(wrapper, imgObj) {
-  const resizeHandle = document.createElement('div');
-  resizeHandle.classList.add('resize-handle');
-  wrapper.appendChild(resizeHandle);
-
-  let dragging = false;
   let resizing = false;
 
-  let offsetX, offsetY;
-  let startWidth, startHeight;
-  let startX, startY;
+  const handle = wrapper.querySelector(".resize-handle");
 
+  handle.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    resizing = true;
+    currentDrag = imgObj;
+    const rect = wrapper.getBoundingClientRect();
+    offsetX = e.clientX - rect.right;
+    offsetY = e.clientY - rect.bottom;
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+
+  wrapper.addEventListener("mousedown", e => {
+    if (e.target.classList.contains("resize-handle")) return;
+
+    resizing = false;
+    currentDrag = imgObj;
+    const previewRect = previewArea.getBoundingClientRect();
+    offsetX = e.clientX - previewRect.left - imgObj.x;
+    offsetY = e.clientY - previewRect.top - imgObj.y;
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  });
+
+  function onMouseMove(e) {
+    const previewRect = previewArea.getBoundingClientRect();
+    if (resizing && currentDrag) {
+      const newWidth = e.clientX - previewRect.left - currentDrag.x;
+      const newHeight = e.clientY - previewRect.top - currentDrag.y;
+      currentDrag.width = Math.max(20, newWidth);
+      currentDrag.height = Math.max(20, newHeight);
+    } else if (currentDrag) {
+      currentDrag.x = e.clientX - previewRect.left - offsetX;
+      currentDrag.y = e.clientY - previewRect.top - offsetY;
+    }
+    render();
+  }
+
+  function onMouseUp() {
+    resizing = false;
+    currentDrag = null;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  }
+}
   // --- Flyt ---
   wrapper.addEventListener('mousedown', e => {
     if (e.target === resizeHandle) return;
