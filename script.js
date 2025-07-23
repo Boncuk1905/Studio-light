@@ -335,12 +335,10 @@ function exportLayout() {
   let width, height;
 
   if (canvasSizeValue === 'auto') {
-    // Hvis "auto", brug previewArea's størrelse
     const previewRect = previewArea.getBoundingClientRect();
     width = Math.round(previewRect.width);
     height = Math.round(previewRect.height);
   } else {
-    // Ellers parse f.eks. "1280x1280"
     const parts = canvasSizeValue.split('x');
     width = parseInt(parts[0], 10);
     height = parseInt(parts[1], 10);
@@ -361,26 +359,49 @@ function exportLayout() {
     ctx.fillRect(0, 0, width, height);
   }
 
-  // Tegn alle billeder på canvas
+  // Forhold mellem previewArea størrelse og eksport-canvas størrelse
+  const previewRect = previewArea.getBoundingClientRect();
+  const scaleX = width / previewRect.width;
+  const scaleY = height / previewRect.height;
+
   images.forEach(imgObj => {
-    const { img, x, y, width: w, height: h, scaleX, scaleY, rotation, mirror, intensity } = imgObj;
+    const { img, x, y, width: w, height: h, scaleX: sX, scaleY: sY, rotation, mirror, intensity } = imgObj;
 
     ctx.save();
 
+    // Juster position i eksport-canvas ift preview
+    const posX = x * scaleX;
+    const posY = y * scaleY;
+
     // Flyt til billedets position
-    ctx.translate(x, y);
+    ctx.translate(posX + (w * scaleX) / 2, posY + (h * scaleY) / 2);
 
     // Rotation i radianer
     ctx.rotate(rotation * Math.PI / 180);
 
-    // Skaler og spejl hvis nødvendigt
-    ctx.scale(scaleX * (mirror ? -1 : 1), scaleY);
+    // Spejl og skalering
+    ctx.scale(sX * (mirror ? -1 : 1), sY);
 
-    // Apply brightness filter
+    // Brightness filter
     ctx.filter = `brightness(${intensity})`;
 
-    // Tegn billedet centreret (derfor -w/2, -h/2)
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    // Billedets naturlige proportioner
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+
+    // Beregn forholdet mellem preview størrelse og naturlig størrelse
+    // For at bevare proportioner i eksporten, skalerer vi efter preview størrelse:
+    const scaleWidth = (w * scaleX) / naturalW;
+    const scaleHeight = (h * scaleY) / naturalH;
+
+    // Brug den mindste af scaleWidth og scaleHeight for at bevare proportioner
+    const scale = Math.min(scaleWidth, scaleHeight);
+
+    const drawWidth = naturalW * scale;
+    const drawHeight = naturalH * scale;
+
+    // Tegn billedet centreret
+    ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
 
     ctx.restore();
   });
