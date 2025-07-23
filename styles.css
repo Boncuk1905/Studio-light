@@ -1,0 +1,67 @@
+
+body {
+  font-family: sans-serif;
+  background: #f4f4f4;
+  text-align: center;
+}
+
+.controls {
+  margin: 20px;
+}
+
+.canvas-container {
+  position: relative;
+  margin: auto;
+  width: 1280px;
+  height: 1280px;
+  background: white;
+  border: 1px solid #ccc;
+  overflow: hidden;
+}
+
+.image-wrapper {
+  position: absolute;
+  cursor: move;
+  user-select: none;
+  transform-origin: center center;
+}
+
+.image-wrapper img.main-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.image-wrapper .reflection {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  transform: scaleY(-1);
+  pointer-events: none;
+}
+
+.guide {
+  position: absolute;
+  background: rgba(0, 153, 255, 0.4);
+  z-index: 999;
+  pointer-events: none;
+  display: none;
+}
+
+.guide-x {
+  width: 1px;
+  top: 0;
+  bottom: 0;
+  left: -9999px;
+}
+
+.guide-y {
+  height: 1px;
+  left: 0;
+  right: 0;
+  top: -9999px;
+}
