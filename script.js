@@ -2,6 +2,8 @@
 const previewArea = document.getElementById('previewArea');
 const exportCanvas = document.getElementById('exportCanvas');
 const ctx = exportCanvas.getContext('2d');
+const images = [];
+
 
 let images = []; // Array med alle billed-objekter
 let currentDrag = null;
@@ -307,67 +309,64 @@ function clearImages() {
 
 // ==== Export canvas som billede ====
 function exportLayout() {
-  const canvas = document.getElementById('exportCanvas');
-  const ctx = canvas.getContext('2d');
-  const exportSize = 1280; // fx 1280x1280, kan evt. sættes dynamisk
+  const canvas = document.getElementById("exportCanvas");
+  const ctx = canvas.getContext("2d");
 
-  // Sæt canvas-størrelse til output størrelse
-  canvas.width = exportSize;
-  canvas.height = exportSize;
+  // Hent størrelse fra dropdown
+  const sizeValue = document.getElementById("canvasSize").value;
+  let width = 1280, height = 1280;
 
-  // Ryd canvas
-  if (transparentBg) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (sizeValue !== "auto") {
+    const [w, h] = sizeValue.split("x").map(Number);
+    width = w;
+    height = h;
   } else {
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Find auto-bredde og højde ud fra previewArea
+    const rect = previewArea.getBoundingClientRect();
+    width = rect.width;
+    height = rect.height;
   }
 
+  canvas.width = width;
+  canvas.height = height;
+
+  // Baggrund
+  const isTransparent = document.getElementById("transparentToggle").checked;
+  if (!isTransparent) {
+    ctx.fillStyle = document.getElementById("bgColorPicker").value || "#ffffff";
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    ctx.clearRect(0, 0, width, height);
+  }
+
+  // Tegn hvert billede
   images.forEach(imgObj => {
-    const { img, x, y, width, height, rotation, scaleX, scaleY } = imgObj;
+    const { img, x, y, width: w, height: h, rotation, scaleX, scaleY, mirror, intensity } = imgObj;
 
-    // Naturlig billedstørrelse og aspektforhold
-    const naturalWidth = img.naturalWidth;
-    const naturalHeight = img.naturalHeight;
-    const aspectRatio = naturalWidth / naturalHeight;
-
-    // Beregn skaleret størrelse, så det passer i exportSize x exportSize uden deformation
-    let drawWidth, drawHeight;
-
-    if (aspectRatio > 1) {
-      // Bredere end højt
-      drawWidth = exportSize;
-      drawHeight = exportSize / aspectRatio;
-    } else {
-      // Højere end bred
-      drawHeight = exportSize;
-      drawWidth = exportSize * aspectRatio;
-    }
-
-    // Beregn position for at centrere billedet i canvas
-    const drawX = (exportSize - drawWidth) / 2;
-    const drawY = (exportSize - drawHeight) / 2;
-
+    // Beregn center og gem kontekst
     ctx.save();
-    // Flyt koordinatsystem til billedets center, så rotation og scale bliver korrekt
-    ctx.translate(drawX + drawWidth / 2, drawY + drawHeight / 2);
+    ctx.translate(x, y);
     ctx.rotate(rotation * Math.PI / 180);
-    ctx.scale(scaleX, scaleY);
+    ctx.scale(mirror ? -scaleX : scaleX, scaleY);
 
-    // Tegn billedet centreret på den nye position
-    ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+    // Brightness
+    ctx.filter = `brightness(${intensity})`;
+
+    // Tegn billedet centreret på dets (x, y)
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
 
     ctx.restore();
+    ctx.filter = "none";
   });
 
-  // Eksportér som data URL og trigger download
-  const dataURL = canvas.toDataURL(`image/${fileFormat}`);
-  const link = document.createElement('a');
-  link.href = dataURL;
-  link.download = `export.${fileFormat}`;
-  link.click();
-}
+  // Download som valgt format
+  const format = document.getElementById("fileFormat").value;
 
-// ==== Start guides ved load ====
-updateGuides();
-render();
+  canvas.toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "trixie-layout." + format;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, "image/" + format);
+}
