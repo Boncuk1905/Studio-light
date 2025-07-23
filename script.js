@@ -107,66 +107,95 @@ function addImage(img) {
 }
 // === Drag, Snap & Resize ===
 function makeDraggable(wrapper, imgObj) {
+  const resizeHandle = document.createElement('div');
+  resizeHandle.classList.add('resize-handle');
+  wrapper.appendChild(resizeHandle);
+
+  let dragging = false;
   let resizing = false;
 
-  const handle = wrapper.querySelector(".resize-handle");
+  let offsetX, offsetY;
+  let startWidth, startHeight;
+  let startX, startY;
 
-  handle.addEventListener("mousedown", (e) => {
-    e.stopPropagation();
-    resizing = true;
+  // --- Flyt ---
+  wrapper.addEventListener('mousedown', e => {
+    if (e.target === resizeHandle) return;
+
+    dragging = true;
     currentDrag = imgObj;
-    const rect = wrapper.getBoundingClientRect();
-    offsetX = e.clientX - rect.right;
-    offsetY = e.clientY - rect.bottom;
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  });
-
-  wrapper.addEventListener("mousedown", e => {
-    if (e.target.classList.contains("resize-handle")) return;
-
-    resizing = false;
-    currentDrag = imgObj;
-    const rect = wrapper.getBoundingClientRect();
     const previewRect = previewArea.getBoundingClientRect();
     offsetX = e.clientX - previewRect.left - imgObj.x;
     offsetY = e.clientY - previewRect.top - imgObj.y;
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  // --- Resize ---
+  resizeHandle.addEventListener('mousedown', e => {
+    e.stopPropagation(); // så det ikke trigger drag
+    resizing = true;
+    currentDrag = imgObj;
+
+    const previewRect = previewArea.getBoundingClientRect();
+    startX = e.clientX - previewRect.left;
+    startY = e.clientY - previewRect.top;
+    startWidth = imgObj.width;
+    startHeight = imgObj.height;
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
   });
 
   function onMouseMove(e) {
     const previewRect = previewArea.getBoundingClientRect();
+    const mouseX = e.clientX - previewRect.left;
+    const mouseY = e.clientY - previewRect.top;
 
-    if (resizing) {
-      const newWidth = e.clientX - previewRect.left - imgObj.x;
-      const newHeight = e.clientY - previewRect.top - imgObj.y;
-      imgObj.width = Math.max(20, newWidth);
-      imgObj.height = Math.max(20, newHeight);
-    } else {
-      let x = e.clientX - previewRect.left - offsetX;
-      let y = e.clientY - previewRect.top - offsetY;
+    if (dragging) {
+      let newX = mouseX - offsetX;
+      let newY = mouseY - offsetY;
 
-      if (document.getElementById('toggleGrid')?.checked) {
-        const snap = snapToGuides(x, y, imgObj.width, imgObj.height);
-        x = snap.x;
-        y = snap.y;
+      // Snap til midten hvis ønsket
+      if (document.getElementById("toggleGrid")?.checked) {
+        const snap = snapToGuides(newX, newY, imgObj.width, imgObj.height);
+        newX = snap.x;
+        newY = snap.y;
       }
 
-      imgObj.x = x;
-      imgObj.y = y;
+      imgObj.x = newX;
+      imgObj.y = newY;
+      render();
     }
 
-    updateWrapperStyle(imgObj);
-    render();
+    if (resizing) {
+      let newWidth = startWidth + (mouseX - startX);
+      let newHeight = startHeight + (mouseY - startY);
+
+      // Bevar billedets proportioner
+      const aspectRatio = startWidth / startHeight;
+      if (newWidth / newHeight > aspectRatio) {
+        newHeight = newWidth / aspectRatio;
+      } else {
+        newWidth = newHeight * aspectRatio;
+      }
+
+      if (newWidth < 20) newWidth = 20;
+      if (newHeight < 20) newHeight = 20;
+
+      imgObj.width = newWidth;
+      imgObj.height = newHeight;
+      render();
+    }
   }
 
   function onMouseUp() {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("mouseup", onMouseUp);
-    currentDrag = null;
+    dragging = false;
+    resizing = false;
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
   }
 }
 
