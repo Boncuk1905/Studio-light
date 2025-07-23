@@ -1,313 +1,194 @@
-// --- Globale variabler ---
+const previewArea = document.getElementById("previewArea");
+const canvas = document.getElementById("exportCanvas");
+const ctx = canvas.getContext("2d");
 
-const previewArea = document.getElementById('previewArea');
-const imageUpload = document.getElementById('imageUpload');
-const opacitySlider = document.getElementById('opacitySlider');
-const bgColorPicker = document.getElementById('bgColorPicker');
-const canvasSizeSelect = document.getElementById('canvasSize');
-const fileFormatSelect = document.getElementById('fileFormat');
-const clearBtn = document.querySelector('button[onclick="clearImages()"]');
-const downloadBtn = document.querySelector('button[onclick="exportLayout()"]');
-const toggleGrid = document.getElementById('toggleGrid');
-let toggleMidLine = document.getElementById('toggleMidLine');
-let toggleReflection = document.getElementById('toggleReflection');
-let zoomLevel = 1;
-
-if (!toggleMidLine) {
-  const cb = document.createElement('input'); cb.type='checkbox'; cb.id='toggleMidLine';
-  const lbl = document.createElement('label'); lbl.append(cb, ' Vis midterlinje');
-  document.querySelector('.controls').appendChild(lbl);
-  toggleMidLine = cb;
-}
-
-if (!toggleReflection) {
-  const cb = document.createElement('input'); cb.type='checkbox'; cb.id='toggleReflection'; cb.checked=true;
-  const lbl = document.createElement('label'); lbl.append(cb, ' Reflektion');
-  document.querySelector('.controls').appendChild(lbl);
-  toggleReflection = cb;
-}
-
-const zoomInBtn = document.createElement('button'); zoomInBtn.textContent = '+';
-const zoomOutBtn = document.createElement('button'); zoomOutBtn.textContent = '−';
-document.querySelector('.controls').append(zoomInBtn, zoomOutBtn);
+const opacitySlider = document.getElementById("opacitySlider");
+const lightAngleSlider = document.getElementById("lightAngleSlider");
+const bgColorPicker = document.getElementById("bgColorPicker");
+const transparentToggle = document.getElementById("transparentToggle");
+const fileFormat = document.getElementById("fileFormat");
+const canvasSizeSelect = document.getElementById("canvasSize");
 
 let images = [];
-let activeImage = null, dragMode = null, dragOffset = {x:0,y:0};
-const snapDistance = 10;
+let currentDrag = null;
+let offsetX, offsetY;
 
-// --- Init previewArea & default canvas size ---
-previewArea.style.width = '1280px';
-previewArea.style.height = '1280px';
-previewArea.style.margin = '0 auto';
-canvasSizeSelect.value = '1280x1280';
+document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
 
-// --- Render funktion & hjælpefunktioner ---
-function getEdges(o) {
-  return {
-    left: o.x, right: o.x + o.width,
-    top: o.y, bottom: o.y + o.height,
-    centerX: o.x + o.width/2, centerY: o.y + o.height/2
-  };
-}
-
-function createImageObject(imgElem) {
-  return {
-    imageElement: imgElem,
-    x: 50, y: 50,
-    width: imgElem.naturalWidth,
-    height: imgElem.naturalHeight,
-    rotation: 0
-  };
-}
-
-function render() {
-  previewArea.innerHTML = '';
-  previewArea.style.background = bgColorPicker.value;
-
-  images.forEach(obj => {
-    const w = obj.width * zoomLevel, h = obj.height * zoomLevel;
-    const div = document.createElement('div');
-    div.className = 'image-wrapper';
-    div.style.left = obj.x * zoomLevel + 'px';
-    div.style.top = obj.y * zoomLevel + 'px';
-    div.style.width = w + 'px';
-    div.style.height = h + 'px';
-    div.style.transform = `rotate(${obj.rotation}deg)`;
-    div.style.position = 'absolute';
-
-    // Billede
-    const img = document.createElement('img');
-    img.src = obj.imageElement.src;
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.draggable = false;
-    div.appendChild(img);
-
-    // Reflektion
-    if (toggleReflection.checked) {
-      const refl = document.createElement('img');
-      refl.src = obj.imageElement.src;
-      refl.style.width = '100%';
-      refl.style.height = '100%';
-      refl.style.transform = 'scaleY(-1)';
-      refl.style.opacity = opacitySlider.value;
-      refl.style.filter = 'blur(2px)';
-      refl.style.position = 'absolute';
-      refl.style.top = h + 'px';
-      refl.draggable = false;
-      div.appendChild(refl);
-    }
-
-    // Resize håndtag
-    const res = document.createElement('div');
-    res.className = 'resize-handle';
-    res.style.position = 'absolute';
-    res.style.width = '12px';
-    res.style.height = '12px';
-    res.style.right = '0';
-    res.style.bottom = '0';
-    res.style.background = '#fff';
-    res.style.border = '1px solid #000';
-    res.style.cursor = 'nwse-resize';
-    div.appendChild(res);
-
-    // Rotate håndtag
-    const rot = document.createElement('div');
-    rot.className = 'rotate-handle';
-    rot.style.position = 'absolute';
-    rot.style.width = '12px';
-    rot.style.height = '12px';
-    rot.style.left = '50%';
-    rot.style.top = '-16px';
-    rot.style.background = '#fff';
-    rot.style.border = '1px solid #000';
-    rot.style.cursor = 'grab';
-    div.appendChild(rot);
-
-    previewArea.appendChild(div);
-    obj.wrapper = div;
-    obj.resizeHandle = res;
-    obj.rotateHandle = rot;
-  });
-
-  drawGuides();
-  if (toggleMidLine.checked) drawMidLines();
-}
-
-function drawGuides() {
-  previewArea.querySelectorAll('.guide-line').forEach(el => el.remove());
-  if (!toggleGrid.checked) return;
-
-  images.forEach(a => {
-    const ea = getEdges(a);
-    images.forEach(b => {
-      if (a === b) return;
-      const eb = getEdges(b);
-
-      ['left','right','centerX'].forEach(k => {
-        if (Math.abs(ea.left - eb[k]) < snapDistance ||
-            Math.abs(ea.right - eb[k]) < snapDistance ||
-            Math.abs(ea.centerX - eb[k]) < snapDistance) {
-          const x = eb[k] * zoomLevel;
-          const line = document.createElement('div');
-          line.className = 'guide-line vertical';
-          line.style.left = x + 'px';
-          line.style.top = '0';
-          line.style.width = '1px';
-          line.style.height = previewArea.clientHeight + 'px';
-          previewArea.appendChild(line);
-        }
-      });
-      ['top','bottom','centerY'].forEach(k => {
-        if (Math.abs(ea.top - eb[k]) < snapDistance ||
-            Math.abs(ea.bottom - eb[k]) < snapDistance ||
-            Math.abs(ea.centerY - eb[k]) < snapDistance) {
-          const y = eb[k] * zoomLevel;
-          const line = document.createElement('div');
-          line.className = 'guide-line horizontal';
-          line.style.top = y + 'px';
-          line.style.left = '0';
-          line.style.height = '1px';
-          line.style.width = previewArea.clientWidth + 'px';
-          previewArea.appendChild(line);
-        }
-      });
-    });
+function handleImageUpload(e) {
+  Array.from(e.target.files).forEach(file => {
+    const img = new Image();
+    img.onload = () => addImage(img);
+    img.src = URL.createObjectURL(file);
   });
 }
 
-function drawMidLines() {
-  previewArea.querySelectorAll('.mid-line').forEach(el => el.remove());
-  const rect = previewArea.getBoundingClientRect();
-  ['vertical','horizontal'].forEach(dir => {
-    const line = document.createElement('div');
-    line.className = 'mid-line ' + dir;
-    line.style.position = 'absolute';
-    line.style.background = 'blue';
-    line.style.opacity = '0.6';
-    if (dir === 'vertical') {
-      line.style.left = (previewArea.clientWidth/2)+'px';
-      line.style.width = '2px'; line.style.height = previewArea.clientHeight+'px';
-    } else {
-      line.style.top = (previewArea.clientHeight/2)+'px';
-      line.style.height = '2px'; line.style.width = previewArea.clientWidth+'px';
-    }
-    previewArea.appendChild(line);
-  });
+function addImage(img) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+  wrapper.style.left = "100px";
+  wrapper.style.top = "100px";
+  wrapper.style.width = img.width + "px";
+  wrapper.style.height = img.height + "px";
+
+  wrapper.dataset.angle = "0";
+
+  const imgEl = img.cloneNode();
+  wrapper.appendChild(imgEl);
+
+  const reflection = img.cloneNode();
+  reflection.className = "reflection";
+  wrapper.appendChild(reflection);
+
+  // Resize handle
+  const resize = document.createElement("div");
+  resize.className = "resize-handle";
+  wrapper.appendChild(resize);
+
+  // Rotate handle
+  const rotate = document.createElement("div");
+  rotate.className = "rotate-handle";
+  wrapper.appendChild(rotate);
+
+  // Events
+  wrapper.addEventListener("mousedown", startDrag);
+  resize.addEventListener("mousedown", startResize);
+  rotate.addEventListener("mousedown", startRotate);
+
+  previewArea.appendChild(wrapper);
+  images.push(wrapper);
 }
 
-// Resize & rotate + drag handlers (kombineret)
+// -------- DRAG --------
+function startDrag(e) {
+  if (e.target.classList.contains("resize-handle") || e.target.classList.contains("rotate-handle")) return;
+  currentDrag = { target: this, mode: "drag" };
+  offsetX = e.offsetX;
+  offsetY = e.offsetY;
+  document.addEventListener("mousemove", drag);
+  document.addEventListener("mouseup", stopInteraction);
+}
 
-previewArea.addEventListener('mousedown', e => {
-  if (e.button !== 0) return;
-  const rect = previewArea.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) / zoomLevel;
-  const my = (e.clientY - rect.top) / zoomLevel;
-
-  for (let i = images.length - 1; i >= 0; i--){
-    const obj = images[i];
-    const edges = getEdges(obj);
-    if (mx >= edges.left && mx <= edges.right && my >= edges.top && my <= edges.bottom) {
-      activeImage = obj;
-      dragOffset = {x: mx - obj.x, y: my - obj.y};
-      dragMode = 'move';
-
-      images.push(...images.splice(i,1)); // bring to front
-      render();
-      return;
-    }
-  }
-});
-
-// Document-wide handlers for drag: move/resize/rotate
-document.addEventListener('mousemove', e => {
-  if (!activeImage || e.buttons !== 1) return;
-  const rect = previewArea.getBoundingClientRect();
-  const mx = (e.clientX - rect.left) / zoomLevel;
-  const my = (e.clientY - rect.top) / zoomLevel;
-  const obj = activeImage;
-
-  // Determine if resizing or rotating
-  if (!dragMode) {
-    // Check proximity to resize handle
-    const dx = mx - (obj.x + obj.width);
-    const dy = my - (obj.y + obj.height);
-    if (Math.hypot(dx, dy) < 10) {
-      dragMode = 'resize';
-    }
-
-    // Check rotate handle
-    const rx = mx - (obj.x + obj.width/2);
-    const ry = my - obj.y;
-    if (Math.hypot(rx, ry + 30) < 10) {
-      dragMode = 'rotate';
-    }
-  }
-
-  if (dragMode === 'move') {
-    let nx = mx - dragOffset.x;
-    let ny = my - dragOffset.y;
-    // Snap logic similar
-    const edges = getEdges(obj);
-    images.forEach(o => {
-      if (o === obj) return;
-      const eb = getEdges(o);
-      ['left','right','centerX'].forEach(k => {
-        if (Math.abs(edges.left - eb[k]) < snapDistance) nx = eb[k];
-        if (Math.abs(edges.right - eb[k]) < snapDistance) nx = eb[k] - obj.width;
-      });
-      ['top','bottom','centerY'].forEach(k => {
-        if (Math.abs(edges.top - eb[k]) < snapDistance) ny = eb[k];
-        if (Math.abs(edges.bottom - eb[k]) < snapDistance) ny = eb[k] - obj.height;
-      });
-    });
-    if (toggleMidLine.checked) {
-      const midx = previewArea.clientWidth / (2*zoomLevel);
-      const midy = previewArea.clientHeight / (2*zoomLevel);
-      const centerX = obj.x + obj.width/2, centerY = obj.y + obj.height/2;
-      if (Math.abs(centerX-midx)<snapDistance) nx = midx - obj.width/2;
-      if (Math.abs(centerY-midy)<snapDistance) ny = midy - obj.height/2;
-    }
-    obj.x = nx; obj.y = ny;
-  }
-  else if (dragMode === 'resize') {
-    obj.width = Math.max(20, mx - obj.x);
-    obj.height = Math.max(20, my - obj.y);
-  }
-  else if (dragMode === 'rotate') {
-    const cx = obj.x + obj.width/2, cy = obj.y + obj.height/2;
-    const angle = Math.atan2(my - cy, mx - cx) * 180/Math.PI;
-    obj.rotation = angle;
-  }
-
+function drag(e) {
+  if (!currentDrag || currentDrag.mode !== "drag") return;
+  const el = currentDrag.target;
+  el.style.left = e.pageX - previewArea.offsetLeft - offsetX + "px";
+  el.style.top = e.pageY - previewArea.offsetTop - offsetY + "px";
   render();
-});
+}
 
-document.addEventListener('mouseup', () => {
-  activeImage = null; dragMode = null;
-});
+// -------- RESIZE --------
+function startResize(e) {
+  currentDrag = { target: this.parentElement, mode: "resize" };
+  e.stopPropagation();
+  document.addEventListener("mousemove", resize);
+  document.addEventListener("mouseup", stopInteraction);
+}
 
-// Upload
-imageUpload.addEventListener('change', e => {
-  Array.from(e.target.files).filter(f => f.type.startsWith('image/')).forEach(f => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        images.push(createImageObject(img));
-        render();
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(f);
+function resize(e) {
+  const el = currentDrag.target;
+  const rect = el.getBoundingClientRect();
+  const newW = e.pageX - rect.left;
+  const newH = e.pageY - rect.top;
+  el.style.width = newW + "px";
+  el.style.height = newH + "px";
+  render();
+}
+
+// -------- ROTATE --------
+function startRotate(e) {
+  currentDrag = { target: this.parentElement, mode: "rotate", originX: e.pageX, originY: e.pageY };
+  e.stopPropagation();
+  document.addEventListener("mousemove", rotate);
+  document.addEventListener("mouseup", stopInteraction);
+}
+
+function rotate(e) {
+  const el = currentDrag.target;
+  const dx = e.pageX - el.offsetLeft - el.offsetWidth / 2;
+  const dy = e.pageY - el.offsetTop - el.offsetHeight / 2;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  el.style.transform = `rotate(${angle}deg)`;
+  el.dataset.angle = angle;
+  render();
+}
+
+function stopInteraction() {
+  document.removeEventListener("mousemove", drag);
+  document.removeEventListener("mousemove", resize);
+  document.removeEventListener("mousemove", rotate);
+  document.removeEventListener("mouseup", stopInteraction);
+  currentDrag = null;
+}
+// -------- RENDER --------
+function render() {
+  const size = canvasSizeSelect.value;
+  let w = 1280, h = 1280;
+
+  if (size !== "auto") {
+    [w, h] = size.split("x").map(Number);
+  }
+
+  canvas.width = w;
+  canvas.height = h;
+
+  if (transparentToggle && transparentToggle.checked) {
+    ctx.clearRect(0, 0, w, h);
+  } else {
+    ctx.fillStyle = bgColorPicker.value;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  images.forEach(wrapper => {
+    const img = wrapper.querySelector("img");
+    const x = parseFloat(wrapper.style.left);
+    const y = parseFloat(wrapper.style.top);
+    const iw = wrapper.offsetWidth;
+    const ih = wrapper.offsetHeight;
+    const angle = parseFloat(wrapper.dataset.angle) || 0;
+    drawImageWithReflection(ctx, img, x, y, iw, ih, angle);
   });
-  e.target.value = '';
+}
+
+// -------- DRAW IMAGE + REFLECTION --------
+async function drawImageWithReflection(ctx, img, x, y, w, h, angle) {
+  ctx.save();
+
+  // Move to center of image
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate((angle * Math.PI) / 180);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
+
+  // Reflection
+  const opacity = parseFloat(opacitySlider.value);
+  ctx.scale(1, -1);
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(img, -w / 2, -h / 2 - h - 5, w, h);
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+// -------- DOWNLOAD --------
+function exportLayout() {
+  render();
+
+  const format = fileFormat.value;
+  const link = document.createElement("a");
+  link.download = `trixie-export.${format}`;
+  link.href = canvas.toDataURL(`image/${format}`);
+  link.click();
+}
+
+// -------- CLEAR --------
+function clearImages() {
+  images.forEach(img => img.remove());
+  images = [];
+  render();
+}
+
+// -------- VIS MIDTERLINJE --------
+const toggleGrid = document.getElementById("toggleGrid");
+toggleGrid.addEventListener("change", () => {
+  document.body.classList.toggle("show-midlines", toggleGrid.checked);
 });
-
-// Zoom controls
-zoomInBtn.onclick = () => { zoomLevel = Math.min(3, zoomLevel+0.2); render(); };
-zoomOutBtn.onclick = () => { zoomLevel = Math.max(0.5, zoomLevel-0.2); render(); };
-
-// Clear & export
-clearBtn.onclick = () => { images=[]; render(); };
-downloadBtn.onclick = exportLayout;
