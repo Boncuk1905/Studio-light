@@ -38,56 +38,7 @@ function handleImageUpload(e) {
 function addImage(img) {
   const previewArea = document.getElementById("previewArea");
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "image-wrapper";
-  wrapper.style.left = "100px";
-  wrapper.style.top = "100px";
-  wrapper.style.width = img.width + "px";
-  wrapper.style.height = img.height + "px";
-
-    // Tilføj kontrolknapper (reset + delete)
-  const controls = document.createElement("div");
-  controls.className = "image-controls";
-
-  const deleteBtn = document.createElement("button");
-  deleteBtn.textContent = "🗑️";
-  deleteBtn.className = "delete-btn";
-  deleteBtn.onclick = () => {
-    images = images.filter(obj => obj !== imgObj);
-    wrapper.remove();
-    render();
-  };
-
-  const resetBtn = document.createElement("button");
-  resetBtn.textContent = "↺";
-  resetBtn.className = "reset-btn";
-  resetBtn.onclick = () => {
-    imgObj.x = 100;
-    imgObj.y = 100;
-    imgObj.width = img.width;
-    imgObj.height = img.height;
-    imgObj.rotation = 0;
-    render();
-  };
-
-  controls.appendChild(resetBtn);
-  controls.appendChild(deleteBtn);
-  wrapper.appendChild(controls);
-  const mainImg = img.cloneNode();
-  mainImg.className = "main-image";
-  wrapper.appendChild(mainImg);
-
-  const reflection = img.cloneNode();
-  reflection.className = "reflection";
-  reflection.style.opacity = reflectionOpacity;
-  wrapper.appendChild(reflection);
-
-  const handle = document.createElement("div");
-  handle.className = "resize-handle";
-  wrapper.appendChild(handle);
-
-  document.getElementById("previewArea").appendChild(wrapper);
-
+  // Opret billedobjekt
   const imgObj = {
     img,
     x: 100,
@@ -96,13 +47,47 @@ function addImage(img) {
     height: img.height,
     rotation: 0,
     showReflection: true,
-    wrapper,
-    mainImg,
-    reflection,
+    wrapper: null
   };
 
+  // Opret wrapper
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+  wrapper.style.left = imgObj.x + "px";
+  wrapper.style.top = imgObj.y + "px";
+  wrapper.style.width = imgObj.width + "px";
+  wrapper.style.height = imgObj.height + "px";
+  wrapper.style.position = "absolute";
+
+  // Hovedbillede
+  const mainImg = img.cloneNode();
+  mainImg.className = "main-image";
+  mainImg.style.width = "100%";
+  mainImg.style.height = "100%";
+  wrapper.appendChild(mainImg);
+
+  // Reflektion
+  const reflection = img.cloneNode();
+  reflection.className = "reflection";
+  reflection.style.opacity = "0.3";
+  wrapper.appendChild(reflection);
+
+  // Resize-håndtag
+  const handle = document.createElement("div");
+  handle.className = "resize-handle";
+  wrapper.appendChild(handle);
+
+  // Tilføj til DOM
+  previewArea.appendChild(wrapper);
+
+  // Gem wrapper i objekt og tilføj til array
+  imgObj.wrapper = wrapper;
   images.push(imgObj);
+
+  // Gør billede drag/resizable
   makeDraggable(wrapper, imgObj);
+
+  // Opdater layout
   render();
 }
 // === Drag, Snap & Resize ===
