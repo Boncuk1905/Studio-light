@@ -14,23 +14,40 @@ let transparentBackground = true;
 let backgroundColor = '#ffffff';
 let reflectionOpacity = 0.25;
 
-// --- Upload billeder ---
-document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
-
-function handleImageUpload(e) {
-  Array.from(e.target.files).forEach(file => {
-    const img = new Image();
-    img.onload = () => addImage(img);
-    img.src = URL.createObjectURL(file);
-  });
-}
-
 function addImage(img) {
-  // Default position og størrelse - sæt størrelse som original
+  const previewArea = document.getElementById("previewArea");
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+  wrapper.style.left = "100px";
+  wrapper.style.top = "100px";
+  wrapper.style.width = img.width + "px";
+  wrapper.style.height = img.height + "px";
+  wrapper.dataset.rotation = "0";
+
+  // Det primære billede
+  const imgEl = img.cloneNode();
+  imgEl.className = "main-image";
+  wrapper.appendChild(imgEl);
+
+  // Refleksion
+  const reflection = img.cloneNode();
+  reflection.className = "reflection";
+  wrapper.appendChild(reflection);
+
+  // Mulighed for resize og rotation her (kan udvides med handles)
+  makeDraggable(wrapper);
+
+  previewArea.appendChild(wrapper);
+
+  // Også gem i images[] for eksport via canvas
+  const rect = wrapper.getBoundingClientRect();
+  const parentRect = previewArea.getBoundingClientRect();
+
   const imgObj = {
     img,
-    x: 100,
-    y: 100,
+    x: rect.left - parentRect.left,
+    y: rect.top - parentRect.top,
     width: img.width,
     height: img.height,
     rotation: 0,
@@ -40,7 +57,6 @@ function addImage(img) {
 
   render();
 }
-
 // --- Mouse events til drag & drop ---
 previewArea.addEventListener('mousedown', e => {
   const rect = previewArea.getBoundingClientRect();
