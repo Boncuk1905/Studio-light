@@ -1,58 +1,46 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8" />
-  <title>Trixie Produkt Visualizer</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8">
+  <title>Layout Editor</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🛠️ Trixie Produkt Visualizer</h1>
+  <h1>Layout Editor</h1>
 
-  <div class="controls">
-    <input type="file" id="imageUpload" multiple accept="image/*" />
+  <input type="file" id="imageUpload" multiple accept="image/*"><br><br>
 
-    <label>Reflektion Opacitet</label>
-    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
+  <label>Baggrundsfarve: <input type="color" id="bgColorPicker" value="#ffffff"></label>
+  <label><input type="checkbox" id="transparentToggle" checked> Transparent baggrund</label><br><br>
 
-    <label>Baggrundsfarve</label>
-    <input type="color" id="bgColorPicker" value="#ffffff" />
-    <label>
-      <input type="checkbox" id="transparentToggle" />
-      Transparent baggrund
-    </label>
-
-    <label>Canvas størrelse</label>
+  <label>Canvas størrelse:
     <select id="canvasSize">
-      <option value="1280x1280" selected>1280×1280</option>
-      <option value="1024x1024">1024×1024</option>
-      <option value="auto">Auto</option>
+      <option value="1280x1280" selected>1280 x 1280</option>
+      <option value="1920x1080">1920 x 1080</option>
+      <option value="1080x1080">1080 x 1080</option>
+      <option value="auto">Auto (tilpas til indhold)</option>
     </select>
+  </label>
 
-    <label>Filformat</label>
-    <select id="fileFormat">
-      <option value="png">PNG</option>
-      <option value="webp">WEBP</option>
-    </select>
+  <label><input type="checkbox" id="toggleGrid"> Vis midterguides</label><br><br>
 
-    <label>
-      <input type="checkbox" id="toggleGrid" checked />
-      Vis midterlinjer
-    </label>
+  <label>Refleksions-opacitet:
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.25">
+  </label><br><br>
 
-    <button onclick="toggleMidLines()">Vis midte</button>
-    <button onclick="clearImages()">Ryd alt</button>
-    <button onclick="exportLayout()">Download</button>
+  <button onclick="exportLayout()">Download billede</button>
+  <select id="fileFormat">
+    <option value="png">PNG</option>
+    <option value="webp">WEBP</option>
+  </select>
+  <button onclick="clearImages()">Ryd alt</button>
+
+  <div id="previewArea" class="canvas-container">
+    <div class="guide-x"></div>
+    <div class="guide-y"></div>
   </div>
 
-  <div id="previewWrapper">
-    <div id="previewArea" class="canvas-container">
-      <div id="guidelines">
-        <div class="guide guide-x"></div>
-        <div class="guide guide-y"></div>
-      </div>
-    </div>
-    <canvas id="exportCanvas" width="1280" height="1280" style="display: none;"></canvas>
-  </div>
+  <canvas id="exportCanvas" width="1280" height="1280" style="display:none;"></canvas>
 
   <script src="script.js"></script>
 </body>
