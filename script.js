@@ -92,86 +92,75 @@ function addImage(img) {
 }
 // === Drag, Snap & Resize ===
 function makeDraggable(wrapper, imgObj) {
-  let resizing = false;
-
   const handle = wrapper.querySelector(".resize-handle");
 
+  let isDragging = false;
+  let isResizing = false;
+
+  let startX, startY;
+  let startWidth, startHeight;
+  let offsetX, offsetY;
+
+  // --- Resize ---
   handle.addEventListener("mousedown", (e) => {
     e.stopPropagation();
-    resizing = true;
-    currentDrag = imgObj;
+    isResizing = true;
+    startX = e.clientX;
+    startY = e.clientY;
     const rect = wrapper.getBoundingClientRect();
-    offsetX = e.clientX - rect.right;
-    offsetY = e.clientY - rect.bottom;
-
+    startWidth = rect.width;
+    startHeight = rect.height;
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   });
 
-  wrapper.addEventListener("mousedown", e => {
+  // --- Drag ---
+  wrapper.addEventListener("mousedown", (e) => {
     if (e.target.classList.contains("resize-handle")) return;
 
-    resizing = false;
-    currentDrag = imgObj;
+    isDragging = true;
     const previewRect = previewArea.getBoundingClientRect();
     offsetX = e.clientX - previewRect.left - imgObj.x;
     offsetY = e.clientY - previewRect.top - imgObj.y;
-
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
   });
 
   function onMouseMove(e) {
     const previewRect = previewArea.getBoundingClientRect();
-    if (resizing && currentDrag) {
-      const newWidth = e.clientX - previewRect.left - currentDrag.x;
-      const newHeight = e.clientY - previewRect.top - currentDrag.y;
-      currentDrag.width = Math.max(20, newWidth);
-      currentDrag.height = Math.max(20, newHeight);
-    } else if (currentDrag) {
-      currentDrag.x = e.clientX - previewRect.left - offsetX;
-      currentDrag.y = e.clientY - previewRect.top - offsetY;
+
+    if (isDragging) {
+      let x = e.clientX - previewRect.left - offsetX;
+      let y = e.clientY - previewRect.top - offsetY;
+
+      // Snap til midte hvis aktiveret
+      if (document.getElementById("toggleGrid")?.checked) {
+        const snap = snapToGuides(x, y, imgObj.width, imgObj.height);
+        x = snap.x;
+        y = snap.y;
+      }
+
+      imgObj.x = x;
+      imgObj.y = y;
     }
+
+    if (isResizing) {
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      imgObj.width = Math.max(20, startWidth + deltaX);
+      imgObj.height = Math.max(20, startHeight + deltaY);
+    }
+
     render();
   }
 
   function onMouseUp() {
-    resizing = false;
-    currentDrag = null;
+    isDragging = false;
+    isResizing = false;
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("mouseup", onMouseUp);
   }
 }
-  // --- Flyt ---
-  wrapper.addEventListener('mousedown', e => {
-    if (e.target === resizeHandle) return;
-
-    dragging = true;
-    currentDrag = imgObj;
-
-    const previewRect = previewArea.getBoundingClientRect();
-    offsetX = e.clientX - previewRect.left - imgObj.x;
-    offsetY = e.clientY - previewRect.top - imgObj.y;
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  });
-
-  // --- Resize ---
-  resizeHandle.addEventListener('mousedown', e => {
-    e.stopPropagation(); // så det ikke trigger drag
-    resizing = true;
-    currentDrag = imgObj;
-
-    const previewRect = previewArea.getBoundingClientRect();
-    startX = e.clientX - previewRect.left;
-    startY = e.clientY - previewRect.top;
-    startWidth = imgObj.width;
-    startHeight = imgObj.height;
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  });
 
   function onMouseMove(e) {
     const previewRect = previewArea.getBoundingClientRect();
