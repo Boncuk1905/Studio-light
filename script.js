@@ -13,6 +13,7 @@ let images = [];
 let currentDrag = null;
 let offsetX, offsetY;
 
+// 📤 Håndter upload
 document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
 
 function handleImageUpload(e) {
@@ -21,24 +22,50 @@ function handleImageUpload(e) {
     img.onload = () => addImage(img);
     img.src = URL.createObjectURL(file);
   });
+
+  // Ryd input, så samme billede kan vælges igen
+  e.target.value = "";
 }
 
+// ➕ Tilføj billede med reflektion
 function addImage(img) {
   const wrapper = document.createElement("div");
   wrapper.className = "image-wrapper";
+  wrapper.style.position = "absolute";
   wrapper.style.left = "100px";
   wrapper.style.top = "100px";
   wrapper.style.width = img.width + "px";
   wrapper.style.height = img.height + "px";
-
   wrapper.dataset.angle = "0";
 
+  // Selve billedet
   const imgEl = img.cloneNode();
+  imgEl.className = "main-image";
   wrapper.appendChild(imgEl);
 
+  // Reflektion (vises spejlvendt)
   const reflection = img.cloneNode();
   reflection.className = "reflection";
   wrapper.appendChild(reflection);
+
+  // Tilføj til preview
+  document.getElementById("previewArea").appendChild(wrapper);
+
+  // Tilføj til images[] array til videre brug (render, export, drag, etc.)
+  images.push({
+    img,
+    element: wrapper,
+    x: 100,
+    y: 100,
+    width: img.width,
+    height: img.height,
+    rotation: 0,
+    showReflection: true,
+    dragging: false,
+  });
+
+  render(); // Tegn opdatering
+}
 
   // Resize handle
   const resize = document.createElement("div");
