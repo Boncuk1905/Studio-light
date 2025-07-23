@@ -75,14 +75,15 @@ function addImage(src) {
 
   // Placér billedet i midten af previewArea
   const previewRect = previewArea.getBoundingClientRect();
-  const startX = previewRect.width / 2 - startWidth / 2;
-  const startY = previewRect.height / 2 - startHeight / 2;
+const startX = previewArea.offsetWidth / 2 - startWidth / 2;
+const startY = previewArea.offsetHeight / 2 - startHeight / 2;
+
 
   // Sæt position og størrelse på wrapper
-  wrapper.style.left = startX + 'px';
-  wrapper.style.top = startY + 'px';
-  wrapper.style.width = startWidth + 'px';
-  wrapper.style.height = startHeight + 'px';
+ wrapper.style.left = startX + 'px';
+wrapper.style.top = startY + 'px';
+wrapper.style.width = startWidth + 'px';
+wrapper.style.height = startHeight + 'px';
 
   // Opret billed-elementet
   const img = document.createElement('img');
