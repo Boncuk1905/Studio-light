@@ -1,111 +1,110 @@
-
-/* === Hele siden === */
-body {
-  font-family: sans-serif;  /* Ren, moderne font */
-  background: #f4f4f4;      /* Lys grå baggrund for kontrast */
-  text-align: center;       /* Centrerer tekst og elementer */
-  margin: 0;                /* Fjern standard margin */
-  padding: 0;               /* Fjern standard padding */
-}
-
-/* === Kontrolpanel eller knapper over canvas === */
-.controls {
-  margin: 20px;             /* Lidt luft omkring kontrolknapperne */
-}
-
-/* === Container omkring dit preview/canvas område === */
-.canvas-container {
-  position: relative;       /* Til absolut placerede børn */
-  margin: auto;             /* Centrerer container horisontalt */
-  width: 1280px;            /* Samme størrelse som canvas */
-  height: 1280px;
-  background: white;        /* Hvid baggrund som canvas */
-  border: 1px solid #ccc;  /* Let kant */
-  overflow: hidden;         /* Skjuler det der går udenfor */
-}
-
-/* === Container for billedpreviewet === */
+/* Container til billed-preview */
 #previewArea {
-  position: relative;          /* For absolut positionering af billeder */
-  width: 1280px;               /* Stor canvas-størrelse */
-  height: 1280px;
-  margin: 20px auto;           /* Centrerer previewet horisontalt */
-  background-color: transparent;     /* Baggrundsfarve, kan ændres dynamisk */
-  overflow: hidden;            /* Skjuler overflowede dele af billeder */
-  border: 1px solid #ccc;      /* Let kant for visuel afgrænsning */
+  position: relative;
+  width: 600px;
+  height: 600px;
+  border: 2px solid #ccc;
+  margin: 20px auto;
+  background-color: #fff;
+  overflow: hidden;
+  user-select: none;
 }
 
-/* === Wrapper omkring hvert billede === */
+/* Wrapper til hvert billede */
 .image-wrapper {
-  position: absolute;          /* For at kunne placere billedet hvor som helst i preview */
-  cursor: move;                /* Mouse cursor ændres ved hover */
-  user-select: none;           /* Forhindrer tekstmarkering når man trækker */
-  box-sizing: border-box;      /* Inkluder padding/border i bredde/højde */
-}
-
-/* === Selve billedet inde i wrapperen === */
-.image-wrapper img.main-image {
-  width: 100%;                /* Fylder hele wrapperen */
-  height: 100%;
-  object-fit: contain;        /* Bevarer billedets proportioner */
-  display: block;             /* Fjerner whitespace under billede */
-  pointer-events: none;       /* Mus events går til wrapper, ikke billedet */
-  user-select: none;          /* Forhindrer markering */
-}
-
-/* === Reflektions-overlay (spejl) === */
-.image-wrapper .reflection {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;        /* Ikke interaktiv */
-  opacity: 0.3;                /* Juster intensitet for spejlingen */
-  transform: scaleX(-1);       /* Spejler billedet horisontalt */
-  filter: brightness(1);       /* Kan justeres dynamisk */
-  mix-blend-mode: screen;      /* Giver en lys reflektions-effekt */
-  z-index: 2;                  /* Ovenpå billedet */
+  border: 1px dashed #666;
+  box-sizing: border-box;
+  cursor: move;
+  user-select: none;
+  transition: box-shadow 0.2s ease;
 }
 
-/* === Resize håndtag i nederste højre hjørne === */
+/* Marker aktivt billede - kan bruges senere */
+.image-wrapper.active {
+  box-shadow: 0 0 8px 2px rgba(0, 123, 255, 0.7);
+}
+
+/* Resize håndtag (nederst højre hjørne) */
 .resize-handle {
   position: absolute;
-  width: 16px;
-  height: 16px;
-  background-color: #4287f5;   /* Blå håndtag, kan ændres */
-  border: 2px solid white;
+  width: 14px;
+  height: 14px;
+  background-color: #555;
   border-radius: 3px;
   right: 0;
   bottom: 0;
-  cursor: se-resize;            /* Cursor ved resize */
-  z-index: 10;
-  box-shadow: 0 0 4px rgba(0,0,0,0.3);
+  cursor: se-resize;
+  user-select: none;
+  box-shadow: 0 0 4px rgba(0,0,0,0.4);
 }
 
-/* === Valgfri: Hover-effekt på resize håndtag === */
-.resize-handle:hover {
-  background-color: #1a5fe8;
-}
-
-/* === Midterlinjer (guides) på previewArea === */
-#previewArea .guide-line {
-  position: absolute;
-  background-color: rgba(255,0,0,0.5); /* Rød, semi-transparent */
-  z-index: 1000;
-}
-
-#previewArea .guide-line.horizontal {
-  height: 2px;
+/* Selve billedet inde i wrapper */
+.main-image {
+  display: block;
   width: 100%;
-  top: 50%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Midterlinjer i previewArea */
+.guide-line {
+  position: absolute;
+  background-color: rgba(255, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.guide-line.vertical {
+  width: 2px;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.guide-line.horizontal {
+  height: 2px;
   left: 0;
+  right: 0;
+  top: 50%;
   transform: translateY(-50%);
 }
 
-#previewArea .guide-line.vertical {
-  width: 2px;
-  height: 100%;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
+/* Knapper og inputs */
+button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  margin: 6px 4px 6px 0;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+input[type="file"],
+input[type="color"],
+input[type="range"],
+select {
+  margin: 6px 4px;
+  padding: 4px 8px;
+  font-size: 14px;
+}
+
+label {
+  font-size: 14px;
+  user-select: none;
+  margin-right: 8px;
+}
+
+input[type="checkbox"] {
+  margin-right: 6px;
+  vertical-align: middle;
 }
