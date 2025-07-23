@@ -37,6 +37,12 @@ document.getElementById('canvasSize').addEventListener('change', (e) => {
 });
 document.getElementById('toggleGrid').addEventListener('change', render);
 
+document.addEventListener('DOMContentLoaded', () => {
+  // Tilføj til DOM
+  previewArea.appendChild(wrapper);
+});
+
+
 // ==== Upload billeder og tilføj ====
 function handleImageUpload(e) {
   Array.from(e.target.files).forEach(file => {
@@ -47,6 +53,7 @@ function handleImageUpload(e) {
 
 // ==== Tilføj billede med wrapper, resize-handle, spejling og drag ====
 function addImage(src) {
+  
   // Opret wrapper div som indeholder billedet + resize håndtag
   const wrapper = document.createElement('div');
   wrapper.classList.add('image-wrapper'); // Sørg for CSS matcher klassenavnet
@@ -92,11 +99,8 @@ function addImage(src) {
     intensity: 1
   };
 
-  // Tilføj til globalt array
+ // Tilføj imgObj til globalt images array
   images.push(imgObj);
-
-  // Tilføj til DOM
-  previewArea.appendChild(wrapper);
 
   // Gør dragbart og resizable
   makeDraggable(wrapper, imgObj);
