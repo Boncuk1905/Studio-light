@@ -309,11 +309,13 @@ function clearImages() {
 function exportLayout() {
   const canvas = document.getElementById('exportCanvas');
   const ctx = canvas.getContext('2d');
+  const exportSize = 1280; // fx 1280x1280, kan evt. sættes dynamisk
+
+  // Sæt canvas-størrelse til output størrelse
+  canvas.width = exportSize;
+  canvas.height = exportSize;
 
   // Ryd canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Baggrund
   if (transparentBg) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   } else {
@@ -324,43 +326,46 @@ function exportLayout() {
   images.forEach(imgObj => {
     const { img, x, y, width, height, rotation, scaleX, scaleY } = imgObj;
 
-    // Beregn proportioner ud fra billedets naturlige størrelse
+    // Naturlig billedstørrelse og aspektforhold
     const naturalWidth = img.naturalWidth;
     const naturalHeight = img.naturalHeight;
     const aspectRatio = naturalWidth / naturalHeight;
 
-    let drawWidth = width;
-    let drawHeight = height;
+    // Beregn skaleret størrelse, så det passer i exportSize x exportSize uden deformation
+    let drawWidth, drawHeight;
 
-    // Juster så det bevarer proportioner
-    if (width / height > aspectRatio) {
-      drawWidth = height * aspectRatio;
+    if (aspectRatio > 1) {
+      // Bredere end højt
+      drawWidth = exportSize;
+      drawHeight = exportSize / aspectRatio;
     } else {
-      drawHeight = width / aspectRatio;
+      // Højere end bred
+      drawHeight = exportSize;
+      drawWidth = exportSize * aspectRatio;
     }
 
+    // Beregn position for at centrere billedet i canvas
+    const drawX = (exportSize - drawWidth) / 2;
+    const drawY = (exportSize - drawHeight) / 2;
+
     ctx.save();
-    ctx.translate(x + width / 2, y + height / 2);
+    // Flyt koordinatsystem til billedets center, så rotation og scale bliver korrekt
+    ctx.translate(drawX + drawWidth / 2, drawY + drawHeight / 2);
     ctx.rotate(rotation * Math.PI / 180);
     ctx.scale(scaleX, scaleY);
+
+    // Tegn billedet centreret på den nye position
     ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+
     ctx.restore();
   });
 
-  // Eksporter canvas som billede (f.eks PNG)
-  const dataURL = canvas.toDataURL('image/png');
-  // download logik her...
-}
-
-
-  // Opret download link
-  exportCanvas.toBlob(blob => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'trixie-layout.' + format;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }, 'image/' + format);
+  // Eksportér som data URL og trigger download
+  const dataURL = canvas.toDataURL(`image/${fileFormat}`);
+  const link = document.createElement('a');
+  link.href = dataURL;
+  link.download = `export.${fileFormat}`;
+  link.click();
 }
 
 // ==== Start guides ved load ====
