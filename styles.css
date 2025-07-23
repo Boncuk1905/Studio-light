@@ -30,7 +30,7 @@ body {
   width: 1280px;               /* Stor canvas-størrelse */
   height: 1280px;
   margin: 20px auto;           /* Centrerer previewet horisontalt */
-  background-color: white;     /* Baggrundsfarve, kan ændres dynamisk */
+  background-color: transparent;     /* Baggrundsfarve, kan ændres dynamisk */
   overflow: hidden;            /* Skjuler overflowede dele af billeder */
   border: 1px solid #ccc;      /* Let kant for visuel afgrænsning */
 }
