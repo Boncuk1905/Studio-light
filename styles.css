@@ -21,26 +21,38 @@ body {
   margin: 0 auto;
 }
 
+#previewArea {
+  position: relative;
+  width: 1280px;
+  height: 1280px;
+  margin: 20px auto;
+  background-color: white; /* eller transparent hvis ønsket */
+  overflow: hidden;
+  border: 1px solid #ccc;
+}
+
 .image-wrapper {
   position: absolute;
   cursor: move;
   user-select: none;
 }
 
-.image-wrapper img {
-  display: block;
-  max-width: 100%;
+.image-wrapper .main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
-.reflection {
-  transform: scaleY(-1);
-  opacity: 0.25;
+.image-wrapper .reflection {
   position: absolute;
   top: 100%;
   left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  transform: scaleY(-1);
   pointer-events: none;
 }
-
 /* Midterlinjer */
 .guide {
   position: absolute;
