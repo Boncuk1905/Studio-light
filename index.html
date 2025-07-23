@@ -2,45 +2,38 @@
 <html lang="da">
 <head>
   <meta charset="UTF-8">
-  <title>Layout Editor</title>
+  <title>Canvas Layout Tool</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Layout Editor</h1>
-
-  <input type="file" id="imageUpload" multiple accept="image/*"><br><br>
-
-  <label>Baggrundsfarve: <input type="color" id="bgColorPicker" value="#ffffff"></label>
-  <label><input type="checkbox" id="transparentToggle" checked> Transparent baggrund</label><br><br>
-
-  <label>Canvas størrelse:
+  <div id="toolbar">
+    <input type="file" id="imageUpload" multiple>
+    <input type="color" id="bgColorPicker" value="#ffffff">
+    <label><input type="checkbox" id="transparentToggle"> Transparent</label>
+    <label><input type="checkbox" id="toggleGrid"> Midterguides</label>
+    <label>Opacitet: <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.25"></label>
     <select id="canvasSize">
-      <option value="1280x1280" selected>1280 x 1280</option>
-      <option value="1920x1080">1920 x 1080</option>
-      <option value="1080x1080">1080 x 1080</option>
-      <option value="auto">Auto (tilpas til indhold)</option>
+      <option value="auto">Auto</option>
+      <option value="800x600">800x600</option>
+      <option value="1920x1080">1920x1080</option>
     </select>
-  </label>
-
-  <label><input type="checkbox" id="toggleGrid"> Vis midterguides</label><br><br>
-
-  <label>Refleksions-opacitet:
-    <input type="range" id="opacitySlider" min="0" max="1" step="0.01" value="0.25">
-  </label><br><br>
-
-  <button onclick="exportLayout()">Download billede</button>
-  <select id="fileFormat">
-    <option value="png">PNG</option>
-    <option value="webp">WEBP</option>
-  </select>
-  <button onclick="clearImages()">Ryd alt</button>
-
-  <div id="previewArea" class="canvas-container">
-    <div class="guide-x"></div>
-    <div class="guide-y"></div>
+    <select id="fileFormat">
+      <option value="png">PNG</option>
+      <option value="webp">WebP</option>
+    </select>
+    <button onclick="exportLayout()">Download</button>
+    <button onclick="clearImages()">Ryd</button>
+    <button onclick="zoomIn()">Zoom ind</button>
+    <button onclick="zoomOut()">Zoom ud</button>
   </div>
 
-  <canvas id="exportCanvas" width="1280" height="1280" style="display:none;"></canvas>
+  <div id="previewWrapper">
+    <div class="guide-x"></div>
+    <div class="guide-y"></div>
+    <div id="previewArea"></div>
+  </div>
+
+  <canvas id="exportCanvas" width="800" height="600"></canvas>
 
   <script src="script.js"></script>
 </body>
