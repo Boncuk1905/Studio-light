@@ -45,6 +45,34 @@ function addImage(img) {
   wrapper.style.width = img.width + "px";
   wrapper.style.height = img.height + "px";
 
+    // Tilføj kontrolknapper (reset + delete)
+  const controls = document.createElement("div");
+  controls.className = "image-controls";
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "🗑️";
+  deleteBtn.className = "delete-btn";
+  deleteBtn.onclick = () => {
+    images = images.filter(obj => obj !== imgObj);
+    wrapper.remove();
+    render();
+  };
+
+  const resetBtn = document.createElement("button");
+  resetBtn.textContent = "↺";
+  resetBtn.className = "reset-btn";
+  resetBtn.onclick = () => {
+    imgObj.x = 100;
+    imgObj.y = 100;
+    imgObj.width = img.width;
+    imgObj.height = img.height;
+    imgObj.rotation = 0;
+    render();
+  };
+
+  controls.appendChild(resetBtn);
+  controls.appendChild(deleteBtn);
+  wrapper.appendChild(controls);
   const mainImg = img.cloneNode();
   mainImg.className = "main-image";
   wrapper.appendChild(mainImg);
@@ -241,3 +269,26 @@ function exportLayout() {
   link.href = canvas.toDataURL(`image/${format}`);
   link.click();
 }
+// --- Zoom funktion ---
+let zoomLevel = 1;
+const zoomStep = 0.1;
+const minZoom = 0.3;
+const maxZoom = 3;
+
+const previewWrapper = document.getElementById("previewWrapper");
+
+function applyZoom() {
+  previewArea.style.transform = `scale(${zoomLevel})`;
+  previewArea.style.transformOrigin = "top left";
+}
+
+// Scroll for zoom
+previewWrapper.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  if (e.deltaY < 0) {
+    zoomLevel = Math.min(zoomLevel + zoomStep, maxZoom);
+  } else {
+    zoomLevel = Math.max(zoomLevel - zoomStep, minZoom);
+  }
+  applyZoom();
+});
