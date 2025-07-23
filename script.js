@@ -25,6 +25,29 @@ function addImage(img) {
   wrapper.style.height = img.height + "px";
   wrapper.dataset.rotation = "0";
 
+  const mainImg = img.cloneNode();
+  mainImg.className = "main-image";
+  wrapper.appendChild(mainImg);
+
+  const reflection = img.cloneNode();
+  reflection.className = "reflection";
+  reflection.style.opacity = 0.25; // juster evt. reflektionens opacitet her
+  wrapper.appendChild(reflection);
+
+  previewArea.appendChild(wrapper);
+
+  images.push({
+    img: mainImg,
+    x: 100,
+    y: 100,
+    width: img.width,
+    height: img.height,
+    rotation: 0,
+    showReflection: true
+  });
+
+  render();
+}
   // Det primære billede
   const imgEl = img.cloneNode();
   imgEl.className = "main-image";
