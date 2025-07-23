@@ -48,38 +48,37 @@ function addImage(img) {
 
   render();
 }
-  // Det primære billede
-  const imgEl = img.cloneNode();
-  imgEl.className = "main-image";
-  wrapper.appendChild(imgEl);
+// Det primære billede
+const imgEl = img.cloneNode();
+imgEl.className = "main-image";
+wrapper.appendChild(imgEl);
 
-  // Refleksion
-  const reflection = img.cloneNode();
-  reflection.className = "reflection";
-  wrapper.appendChild(reflection);
+// Refleksion
+const reflection = img.cloneNode();
+reflection.className = "reflection";
+wrapper.appendChild(reflection);
 
-  // Mulighed for resize og rotation her (kan udvides med handles)
-  makeDraggable(wrapper);
+// Mulighed for resize og rotation her (kan udvides med handles)
+makeDraggable(wrapper);
 
-  previewArea.appendChild(wrapper);
+previewArea.appendChild(wrapper);
 
-  // Også gem i images[] for eksport via canvas
-  const rect = wrapper.getBoundingClientRect();
-  const parentRect = previewArea.getBoundingClientRect();
+// Også gem i images[] for eksport via canvas
+const rect = wrapper.getBoundingClientRect();
+const parentRect = previewArea.getBoundingClientRect();
 
-  const imgObj = {
-    img,
-    x: rect.left - parentRect.left,
-    y: rect.top - parentRect.top,
-    width: img.width,
-    height: img.height,
-    rotation: 0,
-    showReflection: true,
-  };
-  images.push(imgObj);
+const imgObj = {
+  img,
+  x: rect.left - parentRect.left,
+  y: rect.top - parentRect.top,
+  width: img.width,
+  height: img.height,
+  rotation: 0,
+  showReflection: true,
+};
+images.push(imgObj);
 
-  render();
-}
+render();
 // --- Mouse events til drag & drop ---
 previewArea.addEventListener('mousedown', e => {
   const rect = previewArea.getBoundingClientRect();
@@ -260,148 +259,19 @@ previewArea.addEventListener('mousemove', e => {
   const mouseX = e.clientX - rect.left;
   const mouseY = e.clientY - rect.top;
 
-  const newWidth = mouseX - currentDrag.x;
-  const newHeight = mouseY - currentDrag.y;
-
-  if (newWidth > 20 && newHeight > 20) {
-    currentDrag.width = newWidth;
-    currentDrag.height = newHeight;
-    render();
-  }
+  currentDrag.width = Math.max(20, mouseX - currentDrag.x);
+  currentDrag.height = Math.max(20, mouseY - currentDrag.y);
+  render();
 });
 
-// --- Refleksion fade (gradient) i render() ---
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Baggrund
-  if (!transparentBackground) {
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // Tegn billeder
-  images.forEach(imgObj => {
-    ctx.save();
-
-    // Roter omkring midten
-    ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height / 2);
-    ctx.rotate(imgObj.rotation * Math.PI / 180);
-    ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
-    ctx.restore();
-
-    // Refleksion
-    if (imgObj.showReflection) {
-      ctx.save();
-      ctx.translate(imgObj.x + imgObj.width / 2, imgObj.y + imgObj.height * 1.5);
-      ctx.scale(1, -1);
-      ctx.globalAlpha = reflectionOpacity;
-      ctx.drawImage(imgObj.img, -imgObj.width / 2, -imgObj.height / 2, imgObj.width, imgObj.height);
-      ctx.restore();
-
-      // Gradient fade
-      const gradient = ctx.createLinearGradient(0, imgObj.y + imgObj.height, 0, imgObj.y + imgObj.height * 1.5);
-      gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
-      gradient.addColorStop(1, `rgba(255,255,255,0)`);
-
-      ctx.fillStyle = gradient;
-      ctx.fillRect(imgObj.x, imgObj.y + imgObj.height, imgObj.width, imgObj.height / 2);
-    }
-  });
-
-  updateGuides(document.getElementById("toggleGrid").checked);
-}
-// ---------- Del 3: Download, snap, preview og ryd alt ----------
-
-function exportLayout() {
-  const canvas = document.getElementById("exportCanvas");
-  const ctx = canvas.getContext("2d");
-
-  // Rerender til canvas
-  render();
-
-  const format = document.getElementById("fileFormat").value;
-  const mimeType = format === "webp" ? "image/webp" : "image/png";
+// ---------- Del 3: Eksport funktion ----------
+function exportCanvas() {
+  const dataURL = canvas.toDataURL("image/png");
   const link = document.createElement("a");
-  link.download = `layout.${format}`;
-  link.href = canvas.toDataURL(mimeType);
+  link.download = "eksporteret_billede.png";
+  link.href = dataURL;
   link.click();
 }
 
-// --- Ryd alle billeder ---
-function clearImages() {
-  images = [];
-  currentDrag = null;
-  document.getElementById("previewArea").innerHTML = "";
-  render();
-}
-
-// --- Snap til midterlinjer (x og y) ---
-function snapToGuides(x, y, width, height) {
-  const centerX = x + width / 2;
-  const centerY = y + height / 2;
-  const snapThreshold = 15;
-  const canvasMidX = canvas.width / 2;
-  const canvasMidY = canvas.height / 2;
-
-  let snappedX = x;
-  let snappedY = y;
-
-  const showXGuide = Math.abs(centerX - canvasMidX) < snapThreshold;
-  const showYGuide = Math.abs(centerY - canvasMidY) < snapThreshold;
-
-  document.querySelector(".guide-x").style.left = showYGuide ? `${canvasMidX}px` : "-9999px";
-  document.querySelector(".guide-y").style.top = showXGuide ? `${canvasMidY}px` : "-9999px";
-
-  if (showXGuide) snappedX = canvasMidX - width / 2;
-  if (showYGuide) snappedY = canvasMidY - height / 2;
-
-  return { x: snappedX, y: snappedY };
-}
-
-// --- Opdater guides synligt ---
-function updateGuides(show) {
-  document.querySelector(".guide-x").style.display = show ? "block" : "none";
-  document.querySelector(".guide-y").style.display = show ? "block" : "none";
-}
-
-// --- Drag funktion med snap ---
-previewArea.addEventListener("mousedown", e => {
-  if (e.target.tagName === "IMG") {
-    const wrapper = e.target.parentElement;
-    const index = Array.from(previewArea.children).indexOf(wrapper);
-    currentDrag = images[index];
-
-    const rect = previewArea.getBoundingClientRect();
-    offsetX = e.clientX - rect.left - currentDrag.x;
-    offsetY = e.clientY - rect.top - currentDrag.y;
-
-    previewArea.addEventListener("mousemove", onMouseMove);
-    previewArea.addEventListener("mouseup", onMouseUp);
-  }
-});
-
-function onMouseMove(e) {
-  const rect = previewArea.getBoundingClientRect();
-  let x = e.clientX - rect.left - offsetX;
-  let y = e.clientY - rect.top - offsetY;
-
-  // Snap aktiveret?
-  if (document.getElementById("toggleGrid").checked) {
-    const snap = snapToGuides(x, y, currentDrag.width, currentDrag.height);
-    x = snap.x;
-    y = snap.y;
-  }
-
-  currentDrag.x = x;
-  currentDrag.y = y;
-
-  render();
-}
-
-function onMouseUp() {
-  previewArea.removeEventListener("mousemove", onMouseMove);
-  previewArea.removeEventListener("mouseup", onMouseUp);
-  updateGuides(false);
-  currentDrag = null;
-}
+// --- Bind eksport knap hvis du har en ---
+// document.getElementById("exportButton").addEventListener("click", exportCanvas);
