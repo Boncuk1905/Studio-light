@@ -6,32 +6,43 @@ const previewArea = document.getElementById('previewArea');
 let transparentBackground = true, backgroundColor = '#ffffff', reflectionOpacity = 0.25;
 
 // --- Upload billeder ---
-document.getElementById('imageUpload').addEventListener('change', e => {
+document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
+
+function handleImageUpload(e) {
   Array.from(e.target.files).forEach(file => {
     const img = new Image();
     img.onload = () => addImage(img);
     img.src = URL.createObjectURL(file);
   });
-});
+}
+
 
 // --- Tilføj billede ---
 function addImage(img) {
-  const wrapper = document.createElement('div');
-  wrapper.className = 'image-wrapper';
-  wrapper.style.left = '100px';
-  wrapper.style.top = '100px';
-  wrapper.style.width = img.width + 'px';
-  wrapper.style.height = img.height + 'px';
-  previewArea.appendChild(wrapper);
+  const previewArea = document.getElementById("previewArea");
 
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+  wrapper.style.left = "100px";
+  wrapper.style.top = "100px";
+  wrapper.style.width = img.width + "px";
+  wrapper.style.height = img.height + "px";
+  wrapper.style.position = "absolute";
+  wrapper.dataset.rotation = "0";
+
+  // Hovedbillede
   const mainImg = img.cloneNode();
   mainImg.className = 'main-image';
   wrapper.appendChild(mainImg);
 
+  // Refleksion
   const reflection = img.cloneNode();
   reflection.className = 'reflection';
   wrapper.appendChild(reflection);
 
+  previewArea.appendChild(wrapper);
+
+  // Gem i images-array
   images.push({
     img: mainImg,
     wrapper,
@@ -45,6 +56,7 @@ function addImage(img) {
 
   render();
 }
+
 
 // --- Drag & snap ---
 previewArea.addEventListener('mousedown', e => {
