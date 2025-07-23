@@ -27,11 +27,12 @@ let backgroundColor = "#ffffff";
 let transparentBackground = false;
 
 // === Handle Upload ===
+document.getElementById("imageUpload").addEventListener("change", handleImageUpload);
+
 function handleImageUpload(e) {
   Array.from(e.target.files).forEach(file => {
-    const img = new Image();
-    img.onload = () => addImage(img);
-    img.src = URL.createObjectURL(file);
+    const src = URL.createObjectURL(file);
+    addImage(src); // sender src direkte
   });
 }
 
@@ -94,6 +95,7 @@ function addImage(src) {
 
   return imgObj; // Returner for evt. videre brug
 }
+
 // === Drag, Snap & Resize ===
 function makeDraggable(wrapper, imgObj) {
   const handle = wrapper.querySelector(".resize-handle");
