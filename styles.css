@@ -122,29 +122,37 @@ body {
   width: 1280px;
   height: 1280px;
   pointer-events: none;
+  z-index: 100; /* Så linjerne ligger over canvas */
 }
 
-.guide {
+/* Fælles for alle guide-linjer */
+.guide-line {
   position: absolute;
-  background: rgba(0, 153, 255, 0.4);
-  z-index: 100;
-  display: none;
+  background: rgba(0, 153, 255, 0.4); /* Blå farve til snap linjer */
+  pointer-events: none;
+  display: none; /* Skjult som standard */
+  z-index: 101;
 }
 
+/* Horisontal guide-linje (vandret) */
 .guide-x {
   height: 1px;
   width: 100%;
   top: 50%;
   left: 0;
+  transform: translateY(-0.5px); /* Centrer linjen præcist */
 }
 
+/* Vertikal guide-linje (lodret) */
 .guide-y {
   width: 1px;
   height: 100%;
   top: 0;
   left: 50%;
+  transform: translateX(-0.5px); /* Centrer linjen præcist */
 }
 
-body.show-midlines .guide {
+/* Vis midterlinjer når body har klassen show-midlines */
+body.show-midlines #guidelines .guide-line {
   display: block;
 }
