@@ -74,7 +74,6 @@ function addImage(src) {
   const startHeight = 150;
 
   // Placér billedet i midten af previewArea
-  const previewRect = previewArea.getBoundingClientRect();
 const startX = previewArea.offsetWidth / 2 - startWidth / 2;
 const startY = previewArea.offsetHeight / 2 - startHeight / 2;
 
