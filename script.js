@@ -25,35 +25,78 @@ document.getElementById("imageUpload").addEventListener("change", e => {
 });
 
 function addImage(img) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "image-wrapper";
-  wrapper.style.left = "100px";
-  wrapper.style.top = "100px";
-  wrapper.style.width = img.width + "px";
-  wrapper.style.height = img.height + "px";
-
-  const mainImg = img.cloneNode();
-  mainImg.className = "main-image";
-  wrapper.appendChild(mainImg);
-
-  const reflection = img.cloneNode();
-  reflection.className = "reflection";
-  wrapper.appendChild(reflection);
-
-  previewArea.appendChild(wrapper);
-
   const imgObj = {
-    img: mainImg,
+    img,
     x: 100,
     y: 100,
     width: img.width,
     height: img.height,
     rotation: 0,
     showReflection: true,
-    wrapper
   };
 
   images.push(imgObj);
+
+  // DOM-element
+  const wrapper = document.createElement("div");
+  wrapper.className = "image-wrapper";
+  wrapper.style.left = imgObj.x + "px";
+  wrapper.style.top = imgObj.y + "px";
+  wrapper.style.width = imgObj.width + "px";
+  wrapper.style.height = imgObj.height + "px";
+  imgObj.wrapper = wrapper;
+
+  // Selve billedet
+  const mainImg = img.cloneNode();
+  mainImg.className = "main-image";
+  wrapper.appendChild(mainImg);
+
+  // Refleksion
+  const reflection = img.cloneNode();
+  reflection.className = "reflection";
+  wrapper.appendChild(reflection);
+
+  // Resize-handle
+  const resizeHandle = document.createElement("div");
+  resizeHandle.className = "resize-handle";
+  wrapper.appendChild(resizeHandle);
+
+  // Lyt efter resize
+  let resizing = false;
+
+  resizeHandle.addEventListener("mousedown", e => {
+    e.stopPropagation();
+    resizing = true;
+    currentDrag = imgObj;
+    offsetX = e.clientX;
+    offsetY = e.clientY;
+
+    function onMove(ev) {
+      const dx = ev.clientX - offsetX;
+      const dy = ev.clientY - offsetY;
+      offsetX = ev.clientX;
+      offsetY = ev.clientY;
+
+      imgObj.width += dx;
+      imgObj.height += dy;
+
+      wrapper.style.width = imgObj.width + "px";
+      wrapper.style.height = imgObj.height + "px";
+
+      render();
+    }
+
+    function onUp() {
+      resizing = false;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    }
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  });
+
+  previewArea.appendChild(wrapper);
 
   makeDraggable(wrapper, imgObj);
   render();
