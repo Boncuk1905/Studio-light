@@ -107,3 +107,44 @@ body {
   width: 100%;
   top: 50%;
 }
+.canvas-container {
+  position: relative;
+  width: 1280px;
+  height: 1280px;
+  margin: 0 auto;
+  background-color: transparent;
+}
+
+#guidelines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 1280px;
+  pointer-events: none;
+}
+
+.guide {
+  position: absolute;
+  background: rgba(0, 153, 255, 0.4);
+  z-index: 100;
+  display: none;
+}
+
+.guide-x {
+  height: 1px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+}
+
+.guide-y {
+  width: 1px;
+  height: 100%;
+  top: 0;
+  left: 50%;
+}
+
+body.show-midlines .guide {
+  display: block;
+}
