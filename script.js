@@ -307,62 +307,51 @@ function clearImages() {
 
 // ==== Export canvas som billede ====
 function exportLayout() {
-  const format = document.getElementById('fileFormat').value;
-  const bgTransparent = document.getElementById('transparentToggle').checked;
-  const bgColor = bgTransparent ? null : document.getElementById('bgColorPicker').value;
+  const canvas = document.getElementById('exportCanvas');
+  const ctx = canvas.getContext('2d');
 
-  // Sæt canvas størrelse fra dropdown
-  const sizeVal = document.getElementById('canvasSize').value;
-  if(sizeVal === 'auto'){
-    exportCanvas.width = previewArea.clientWidth;
-    exportCanvas.height = previewArea.clientHeight;
+  // Ryd canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Baggrund
+  if (transparentBg) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   } else {
-    const [w,h] = sizeVal.split('x').map(Number);
-    exportCanvas.width = w;
-    exportCanvas.height = h;
-  }
-
-  // Tegn baggrund
-  if(!bgTransparent) {
     ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-  } else {
-    ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Skaler forhold for billeder i eksport (for at bevare størrelse uden at strække)
-  const scaleX = exportCanvas.width / previewArea.clientWidth;
-  const scaleY = exportCanvas.height / previewArea.clientHeight;
-
-  // Tegn alle billeder på canvas
   images.forEach(imgObj => {
-    const { img, x, y, width, height, mirror, intensity } = imgObj;
-    ctx.save();
+    const { img, x, y, width, height, rotation, scaleX, scaleY } = imgObj;
 
-    // Flyt til position
-    ctx.translate(x * scaleX, y * scaleY);
+    // Beregn proportioner ud fra billedets naturlige størrelse
+    const naturalWidth = img.naturalWidth;
+    const naturalHeight = img.naturalHeight;
+    const aspectRatio = naturalWidth / naturalHeight;
 
-    // Spejling
-    ctx.scale(mirror ? -1 : 1, 1);
+    let drawWidth = width;
+    let drawHeight = height;
 
-    // Tegn billede
-    if(mirror) {
-      // Hvis spejlet, juster x for at tegne korrekt
-      ctx.drawImage(img, -width * scaleX, 0, width * scaleX, height * scaleY);
+    // Juster så det bevarer proportioner
+    if (width / height > aspectRatio) {
+      drawWidth = height * aspectRatio;
     } else {
-      ctx.drawImage(img, 0, 0, width * scaleX, height * scaleY);
+      drawHeight = width / aspectRatio;
     }
 
-    // Overlay refleksion (blend med opacity)
-    if(intensity > 0) {
-      ctx.globalAlpha = intensity * 0.3; // Lavere opacity for refleksion
-      ctx.scale(-1, 1);
-      ctx.drawImage(img, -width * scaleX, 0, width * scaleX, height * scaleY);
-      ctx.globalAlpha = 1;
-    }
-
+    ctx.save();
+    ctx.translate(x + width / 2, y + height / 2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.scale(scaleX, scaleY);
+    ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
     ctx.restore();
   });
+
+  // Eksporter canvas som billede (f.eks PNG)
+  const dataURL = canvas.toDataURL('image/png');
+  // download logik her...
+}
+
 
   // Opret download link
   exportCanvas.toBlob(blob => {
