@@ -328,55 +328,51 @@ function clearImages() {
 
 // ==== Export canvas som billede ====
 function exportLayout() {
-  const canvas = document.getElementById("exportCanvas");
-  const ctx = canvas.getContext("2d");
+  // Sæt canvas størrelse dynamisk (evt. ud fra valgt størrelse)
+  exportCanvas.width = 1280;
+  exportCanvas.height = 1280;
 
-  // Læs valgt filformat
-  const format = document.getElementById("fileFormat").value;
+  // Ryd canvas før ny tegning
+  ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-  // Tjek transparent eller ej
-  const transparent = document.getElementById("transparentToggle").checked;
-
-  // Baggrund
-  if (!transparent) {
-    const bgColor = document.getElementById("bgColorPicker").value;
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Baggrund - enten hvid eller transparent
+  if(document.getElementById('transparentToggle').checked) {
+    ctx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
   } else {
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // transparent
+    ctx.fillStyle = document.getElementById('bgColorPicker').value || '#ffffff';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
   }
 
   // Tegn hvert billede
   images.forEach(imgObj => {
-    const { img, x, y, width, height, rotation, mirror, intensity } = imgObj;
+    const {img, x, y, width, height, scaleX, scaleY, rotation, mirror, intensity} = imgObj;
 
     ctx.save();
 
-    // Flyt til midten af billedets placering
-    ctx.translate(x + width / 2, y + height / 2);
+    // Flyt til billedets position
+    ctx.translate(x, y);
 
     // Rotation
-    ctx.rotate((rotation * Math.PI) / 180);
+    ctx.rotate(rotation * Math.PI / 180);
 
-    // Spejling
-    const scaleX = mirror ? -1 : 1;
-    ctx.scale(scaleX, 1);
+    // Spejling + skalering
+    ctx.scale(scaleX * (mirror ? -1 : 1), scaleY);
 
-    // Lysstyrke/intensitet
+    // Tegn med opacity/brightness filter (intensity)
     ctx.filter = `brightness(${intensity})`;
 
-    // Tegn billede (centreret om det punkt vi roterede omkring)
+    // Tegn billedet med centrum i 0,0 (fordi vi allerede har translate)
     ctx.drawImage(img, -width / 2, -height / 2, width, height);
 
     ctx.restore();
   });
 
-  // Download canvas
-  canvas.toBlob(blob => {
-    const a = document.createElement("a");
+  // Opret download link
+  exportCanvas.toBlob(blob => {
+    const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = "trixie-layout." + format;
+    a.download = 'trixie-layout.png'; // eller format dynamisk
     a.click();
     URL.revokeObjectURL(a.href);
-  }, 'image/' + format);
+  }, 'image/png');
 }
