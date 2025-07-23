@@ -214,24 +214,60 @@ function render() {
 
     ctx.restore();
 
-    // Refleksion
-    if (showReflection) {
-      ctx.save();
-      ctx.translate(x + width / 2, y + height * 1.5);
-      ctx.scale(1, -1);
-      ctx.globalAlpha = reflectionOpacity;
-      ctx.drawImage(img, -width / 2, -height / 2, width, height);
-      ctx.restore();
+   // Refleksion
+if (showReflection) {
+  ctx.save();
+  ctx.translate(x + width / 2, y + height * 1.5); // Flip omkring bunden
+  ctx.scale(1, -1);
+  ctx.globalAlpha = reflectionOpacity;
+  ctx.drawImage(img, -width / 2, -height / 2, width, height);
+  ctx.restore();
 
-      // Fade-out på refleksion
-      const gradient = ctx.createLinearGradient(0, y + height, 0, y + height * 1.5);
-      gradient.addColorStop(0, `rgba(255,255,255,${reflectionOpacity})`);
-      gradient.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(x, y + height, width, height / 2);
-    }
+  // Fade-out på refleksionen
+  const fade = ctx.createLinearGradient(x, y + height, x, y + height + height / 2);
+  fade.addColorStop(0, `rgba(255,255,255,0)`);
+  fade.addColorStop(1, `rgba(255,255,255,1)`);
+  ctx.fillStyle = fade;
+  ctx.globalAlpha = reflectionOpacity;
+  ctx.fillRect(x, y + height, width, height / 2);
+  ctx.globalAlpha = 1;
+}
   });
 
   // Midterguides
-  updateGuides(document.getElementById("toggleGrid").checked);
+  function updateGuides(show) {
+  const previewArea = document.getElementById('previewArea');
+
+  // Fjern gamle linjer
+  document.querySelectorAll('.guide-line').forEach(g => g.remove());
+
+  if (!show) return;
+
+  // Lodret midterlinje
+  const vertical = document.createElement('div');
+  vertical.className = 'guide-line';
+  vertical.style.position = 'absolute';
+  vertical.style.left = '50%';
+  vertical.style.top = '0';
+  vertical.style.bottom = '0';
+  vertical.style.width = '1px';
+  vertical.style.backgroundColor = 'red';
+  vertical.style.opacity = '0.4';
+  vertical.style.pointerEvents = 'none';
+  vertical.style.transform = 'translateX(-0.5px)';
+  previewArea.appendChild(vertical);
+
+  // Vandret midterlinje
+  const horizontal = document.createElement('div');
+  horizontal.className = 'guide-line';
+  horizontal.style.position = 'absolute';
+  horizontal.style.top = '50%';
+  horizontal.style.left = '0';
+  horizontal.style.right = '0';
+  horizontal.style.height = '1px';
+  horizontal.style.backgroundColor = 'red';
+  horizontal.style.opacity = '0.4';
+  horizontal.style.pointerEvents = 'none';
+  horizontal.style.transform = 'translateY(-0.5px)';
+  previewArea.appendChild(horizontal);
 }
