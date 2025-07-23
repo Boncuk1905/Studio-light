@@ -35,60 +35,64 @@ function handleImageUpload(e) {
   });
 }
 
-function addImage(img) {
-  const previewArea = document.getElementById("previewArea");
+function addImage(src) {
+  // Opret wrapper div som indeholder billedet + resize håndtag
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('img-wrapper');
+  wrapper.style.position = 'absolute';
+  wrapper.style.cursor = 'move';
+  
+  // Opret billed-elementet
+  const img = document.createElement('img');
+  img.src = src;
+  img.style.userSelect = 'none';
+  img.style.display = 'block'; // fjerner inline whitespace
+  img.style.pointerEvents = 'none'; // så mus-events går til wrapper
+  
+  wrapper.appendChild(img);
 
-  // Opret billedobjekt
+  // Tilføj resize-håndtag (en lille firkant i nederste højre hjørne)
+  const resizeHandle = document.createElement('div');
+  resizeHandle.classList.add('resize-handle');
+  wrapper.appendChild(resizeHandle);
+
+  // Sæt startdimensioner (kan ændres efter behov)
+  const startWidth = 150;
+  const startHeight = 150;
+
+  // Placér billedet i midten af previewArea (forudsat previewArea er globalt)
+  const previewRect = previewArea.getBoundingClientRect();
+  const startX = previewRect.width / 2;
+  const startY = previewRect.height / 2;
+
+  // Opret et billede-objekt til at holde data
   const imgObj = {
+    wrapper,
     img,
-    x: 100,
-    y: 100,
-    width: img.width,
-    height: img.height,
+    x: startX,
+    y: startY,
+    width: startWidth,
+    height: startHeight,
     rotation: 0,
-    showReflection: true,
-    wrapper: null
+    scaleX: 1,
+    scaleY: 1,
+    mirror: false,   // spejling
+    intensity: 1     // filter-intensitet (brightness)
   };
 
-  // Opret wrapper
-  const wrapper = document.createElement("div");
-  wrapper.className = "image-wrapper";
-  wrapper.style.left = imgObj.x + "px";
-  wrapper.style.top = imgObj.y + "px";
-  wrapper.style.width = imgObj.width + "px";
-  wrapper.style.height = imgObj.height + "px";
-  wrapper.style.position = "absolute";
-
-  // Hovedbillede
-  const mainImg = img.cloneNode();
-  mainImg.className = "main-image";
-  mainImg.style.width = "100%";
-  mainImg.style.height = "100%";
-  wrapper.appendChild(mainImg);
-
-  // Reflektion
-  const reflection = img.cloneNode();
-  reflection.className = "reflection";
-  reflection.style.opacity = "0.3";
-  wrapper.appendChild(reflection);
-
-  // Resize-håndtag
-  const handle = document.createElement("div");
-  handle.className = "resize-handle";
-  wrapper.appendChild(handle);
-
-  // Tilføj til DOM
-  previewArea.appendChild(wrapper);
-
-  // Gem wrapper i objekt og tilføj til array
-  imgObj.wrapper = wrapper;
+  // Gem i global images array
   images.push(imgObj);
 
-  // Gør billede drag/resizable
+  // Tilføj wrapper til previewArea i DOM
+  previewArea.appendChild(wrapper);
+
+  // Gør billedet dragbart og resizable
   makeDraggable(wrapper, imgObj);
 
-  // Opdater layout
+  // Render billedet med startparametre
   render();
+
+  return imgObj; // Returner for evt. videre brug
 }
 // === Drag, Snap & Resize ===
 function makeDraggable(wrapper, imgObj) {
