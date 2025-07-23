@@ -312,61 +312,52 @@ function exportLayout() {
   const canvas = document.getElementById("exportCanvas");
   const ctx = canvas.getContext("2d");
 
-  // Hent størrelse fra dropdown
-  const sizeValue = document.getElementById("canvasSize").value;
-  let width = 1280, height = 1280;
+  // Læs valgt filformat
+  const format = document.getElementById("fileFormat").value;
 
-  if (sizeValue !== "auto") {
-    const [w, h] = sizeValue.split("x").map(Number);
-    width = w;
-    height = h;
-  } else {
-    // Find auto-bredde og højde ud fra previewArea
-    const rect = previewArea.getBoundingClientRect();
-    width = rect.width;
-    height = rect.height;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
+  // Tjek transparent eller ej
+  const transparent = document.getElementById("transparentToggle").checked;
 
   // Baggrund
-  const isTransparent = document.getElementById("transparentToggle").checked;
-  if (!isTransparent) {
-    ctx.fillStyle = document.getElementById("bgColorPicker").value || "#ffffff";
-    ctx.fillRect(0, 0, width, height);
+  if (!transparent) {
+    const bgColor = document.getElementById("bgColorPicker").value;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   } else {
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // transparent
   }
 
   // Tegn hvert billede
   images.forEach(imgObj => {
-    const { img, x, y, width: w, height: h, rotation, scaleX, scaleY, mirror, intensity } = imgObj;
+    const { img, x, y, width, height, rotation, mirror, intensity } = imgObj;
 
-    // Beregn center og gem kontekst
     ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rotation * Math.PI / 180);
-    ctx.scale(mirror ? -scaleX : scaleX, scaleY);
 
-    // Brightness
+    // Flyt til midten af billedets placering
+    ctx.translate(x + width / 2, y + height / 2);
+
+    // Rotation
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    // Spejling
+    const scaleX = mirror ? -1 : 1;
+    ctx.scale(scaleX, 1);
+
+    // Lysstyrke/intensitet
     ctx.filter = `brightness(${intensity})`;
 
-    // Tegn billedet centreret på dets (x, y)
-    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+    // Tegn billede (centreret om det punkt vi roterede omkring)
+    ctx.drawImage(img, -width / 2, -height / 2, width, height);
 
     ctx.restore();
-    ctx.filter = "none";
   });
 
-  // Download som valgt format
-  const format = document.getElementById("fileFormat").value;
-
+  // Download canvas
   canvas.toBlob(blob => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "trixie-layout." + format;
     a.click();
     URL.revokeObjectURL(a.href);
-  }, "image/" + format);
+  }, 'image/' + format);
 }
