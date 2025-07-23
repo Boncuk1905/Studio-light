@@ -254,21 +254,26 @@ function snapToGuides(x, y, width, height) {
 // ==== Render preview area ====
 function render() {
   images.forEach(imgObj => {
-    const { wrapper, img, reflection, x, y, width, height, mirror, intensity } = imgObj;
+    const { wrapper, img, x, y, width, height, rotation, scaleX, scaleY, mirror, intensity } = imgObj;
 
-    wrapper.style.left = x + 'px';
-    wrapper.style.top = y + 'px';
+    // Opdater wrapper position og størrelse
+    wrapper.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
     wrapper.style.width = width + 'px';
     wrapper.style.height = height + 'px';
 
+    // Sørg for billedet fylder wrapperen
     img.style.width = '100%';
     img.style.height = '100%';
 
-    // Spejling (flip horisontalt)
-    img.style.transform = mirror ? 'scaleX(-1)' : 'scaleX(1)';
+    // Håndter spejling horisontalt
+    if (mirror) {
+      img.style.transform = 'scaleX(-1)';
+    } else {
+      img.style.transform = 'none';
+    }
 
-    // Refleksion opacity
-    reflection.style.opacity = intensity;
+    // Juster intensiteten som brightness filter
+    img.style.filter = `brightness(${intensity})`;
   });
 
   updateGuides();
