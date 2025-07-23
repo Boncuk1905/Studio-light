@@ -19,6 +19,7 @@ body {
   overflow: hidden;
 }
 
+/* --- Billed-wrapper --- */
 .image-wrapper {
   position: absolute;
   cursor: move;
@@ -26,13 +27,16 @@ body {
   transform-origin: center center;
 }
 
+/* --- Hovedbillede --- */
 .image-wrapper img.main-image {
-  display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
+  pointer-events: none;
 }
 
+/* --- Refleksionseffekt --- */
 .image-wrapper .reflection {
   position: absolute;
   top: 100%;
@@ -42,6 +46,7 @@ body {
   opacity: 0.3;
   transform: scaleY(-1);
   pointer-events: none;
+  filter: brightness(0.6); /* kan styres via JS hvis ønsket */
 }
 
 .guide {
@@ -65,18 +70,19 @@ body {
   right: 0;
   top: -9999px;
 }
-/* --- Resize handle i hjørnet --- */
+/* --- Resize-håndtag nederst til højre --- */
 .resize-handle {
-  width: 16px;
-  height: 16px;
   position: absolute;
-  bottom: -8px;
-  right: -8px;
-  background-color: #007bff;
+  width: 14px;
+  height: 14px;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
   cursor: se-resize;
-  border-radius: 3px;
-  z-index: 10;
+  z-index: 2;
+  border-radius: 2px;
 }
+
 .image-controls {
   position: absolute;
   top: -25px;
