@@ -1,83 +1,57 @@
 body {
   font-family: sans-serif;
   padding: 20px;
-  background: #f0f0f0;
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
 }
 
 .canvas-container {
   position: relative;
-  width: 100%;
-  max-width: 1280px;
-  aspect-ratio: 1 / 1;
-  border: 1px solid #ccc;
-  background: #fff;
-  margin: 0 auto;
-}
-
-#previewArea {
-  position: relative;
   width: 1280px;
   height: 1280px;
-  margin: 20px auto;
-  background-color: white; /* eller transparent hvis ønsket */
-  overflow: hidden;
   border: 1px solid #ccc;
+  background: #fff;
+  margin-top: 20px;
+  overflow: hidden;
 }
 
 .image-wrapper {
   position: absolute;
-  cursor: move;
+  pointer-events: none;
+}
+
+.image-wrapper img {
+  display: block;
+  pointer-events: auto;
   user-select: none;
 }
 
-.image-wrapper .main-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-  user-drag: none;
+.reflection {
+  transform: scaleY(-1);
+  opacity: 0.25;
   pointer-events: none;
 }
 
-.image-wrapper .reflection {
+.guide-x, .guide-y {
   position: absolute;
-  top: 100%;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.3;
-  transform: scaleY(-1);
+  background: rgba(0, 0, 255, 0.5);
   pointer-events: none;
-}
-/* Midterlinjer */
-.guide {
-  position: absolute;
-  background: rgba(0, 153, 255, 0.4);
   z-index: 1000;
-  display: none;
 }
 
 .guide-x {
-  height: 1px;
-  width: 100%;
-  top: 50%;
-  left: 0;
+  width: 1px;
+  height: 100%;
+  left: -9999px;
 }
 
 .guide-y {
-  width: 1px;
-  height: 100%;
-  left: 50%;
-  top: 0;
+  height: 1px;
+  width: 100%;
+  top: -9999px;
 }
 
-body.show-midlines .guide {
-  display: block;
+.show-midlines .guide-x,
+.show-midlines .guide-y {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
