@@ -70,8 +70,8 @@ body {
   width: 16px;
   height: 16px;
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: -8px;
+  right: -8px;
   background-color: #007bff;
   cursor: se-resize;
   border-radius: 3px;
