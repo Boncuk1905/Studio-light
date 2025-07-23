@@ -1,32 +1,26 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-  <meta charset="UTF-8">
-  <title>Trixie Studio Visualizer</title>
-  <link rel="stylesheet" href="styles.css"> <!-- 💡 Link til dit CSS-stylesheet -->
+  <meta charset="UTF-8" />
+  <title>Trixie Produkt Visualizer</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <h1>🛠️ Trixie Produkt Visualizer</h1>
 
-  <!-- 🎛️ Kontrolpanel med alle brugerindstillinger -->
   <div class="controls">
-    <!-- 📤 Upload billeder -->
-    <input type="file" id="imageUpload" multiple accept="image/*">
+    <input type="file" id="imageUpload" multiple accept="image/*" />
 
-    <!-- 💡 Reflektionsindstillinger -->
     <label>Reflektion Opacitet</label>
-    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25">
+    <input type="range" id="opacitySlider" min="0" max="1" step="0.05" value="0.25" />
 
-    <!-- 🔦 Lysvinkel (til fremtidig effekt?) -->
-    <label>Lysvinkel</label>
-    <input type="range" id="lightAngleSlider" min="0" max="360" step="1" value="45">
-
-    <!-- 🎨 Baggrundsfarve og gennemsigtighed -->
     <label>Baggrundsfarve</label>
-    <input type="color" id="bgColorPicker" value="#ffffff">
-    <label><input type="checkbox" id="transparentToggle"> Transparent baggrund</label>
+    <input type="color" id="bgColorPicker" value="#ffffff" />
+    <label>
+      <input type="checkbox" id="transparentToggle" />
+      Transparent baggrund
+    </label>
 
-    <!-- 📐 Canvas-størrelse (ændrer eksport størrelse) -->
     <label>Canvas størrelse</label>
     <select id="canvasSize">
       <option value="1280x1280" selected>1280×1280</option>
@@ -34,35 +28,32 @@
       <option value="auto">Auto</option>
     </select>
 
-    <!-- 🖼️ Filformat til eksport -->
     <label>Filformat</label>
     <select id="fileFormat">
       <option value="png">PNG</option>
       <option value="webp">WEBP</option>
     </select>
 
-    <!-- 🟩 Grid toggle -->
-    <label><input type="checkbox" id="toggleGrid" checked> Vis midterlinjer</label>
+    <label>
+      <input type="checkbox" id="toggleGrid" checked />
+      Vis midterlinjer
+    </label>
 
-    <!-- 🧹 Ryd og eksporter -->
-    <button onclick="clearImages()">Ryd alt</button>
     <button onclick="toggleMidLines()">Vis midte</button>
+    <button onclick="clearImages()">Ryd alt</button>
     <button onclick="exportLayout()">Download</button>
   </div>
 
-  <!-- 🖼️ Preview og Canvas område -->
-  <div id="previewArea" class="canvas-container">
-    <!-- 🎨 Canvas som bliver eksporteret og preview-vises -->
-    <canvas id="exportCanvas" width="1280" height="1280"></canvas>
-
-    <!-- 📏 Snap-guidelines til visuel justering -->
-    <div id="guidelines">
-      <div class="guide guide-x"></div> <!-- Horisontal guide -->
-      <div class="guide guide-y"></div> <!-- Vertikal guide -->
+  <div id="previewWrapper">
+    <div id="previewArea" class="canvas-container">
+      <div id="guidelines">
+        <div class="guide guide-x"></div>
+        <div class="guide guide-y"></div>
+      </div>
     </div>
+    <canvas id="exportCanvas" width="1280" height="1280" style="display: none;"></canvas>
   </div>
 
-  <!-- 📜 JavaScript funktionalitet -->
   <script src="script.js"></script>
 </body>
 </html>
