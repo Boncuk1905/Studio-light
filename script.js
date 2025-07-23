@@ -330,7 +330,6 @@ function clearImages() {
 
 // ==== Export canvas som billede ====
 function exportLayout() {
-  // Hent valgt canvas-størrelse
   const canvasSizeValue = document.getElementById('canvasSize').value;
   let width, height;
 
@@ -344,14 +343,11 @@ function exportLayout() {
     height = parseInt(parts[1], 10);
   }
 
-  // Sæt canvas størrelse dynamisk
   exportCanvas.width = width;
   exportCanvas.height = height;
 
-  // Ryd canvas
+  // Ryd canvas og baggrund
   ctx.clearRect(0, 0, width, height);
-
-  // Tegn baggrund: transparent eller farve
   if (document.getElementById('transparentToggle').checked) {
     ctx.clearRect(0, 0, width, height);
   } else {
@@ -359,54 +355,37 @@ function exportLayout() {
     ctx.fillRect(0, 0, width, height);
   }
 
-  // Forhold mellem previewArea størrelse og eksport-canvas størrelse
+  // Beregn scaling fra preview til export canvas
   const previewRect = previewArea.getBoundingClientRect();
-  const scaleX = width / previewRect.width;
-  const scaleY = height / previewRect.height;
+  const scaleXFactor = width / previewRect.width;
+  const scaleYFactor = height / previewRect.height;
 
   images.forEach(imgObj => {
-    const { img, x, y, width: w, height: h, scaleX: sX, scaleY: sY, rotation, mirror, intensity } = imgObj;
+    const { img, x, y, width: w, height: h, scaleX, scaleY, rotation, mirror, intensity } = imgObj;
 
     ctx.save();
 
-    // Juster position i eksport-canvas ift preview
-    const posX = x * scaleX;
-    const posY = y * scaleY;
-
-    // Flyt til billedets position
-    ctx.translate(posX + (w * scaleX) / 2, posY + (h * scaleY) / 2);
+    // Position og størrelse skaleret til export canvas
+    const centerX = (x + w / 2) * scaleXFactor;
+    const centerY = (y + h / 2) * scaleYFactor;
+    ctx.translate(centerX, centerY);
 
     // Rotation i radianer
     ctx.rotate(rotation * Math.PI / 180);
 
-    // Spejl og skalering
-    ctx.scale(sX * (mirror ? -1 : 1), sY);
+    // Skalering + spejling
+    ctx.scale(scaleX * scaleXFactor * (mirror ? -1 : 1), scaleY * scaleYFactor);
 
-    // Brightness filter
+    // Juster lysstyrke (brightness)
     ctx.filter = `brightness(${intensity})`;
 
-    // Billedets naturlige proportioner
-    const naturalW = img.naturalWidth;
-    const naturalH = img.naturalHeight;
-
-    // Beregn forholdet mellem preview størrelse og naturlig størrelse
-    // For at bevare proportioner i eksporten, skalerer vi efter preview størrelse:
-    const scaleWidth = (w * scaleX) / naturalW;
-    const scaleHeight = (h * scaleY) / naturalH;
-
-    // Brug den mindste af scaleWidth og scaleHeight for at bevare proportioner
-    const scale = Math.min(scaleWidth, scaleHeight);
-
-    const drawWidth = naturalW * scale;
-    const drawHeight = naturalH * scale;
-
     // Tegn billedet centreret
-    ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
 
     ctx.restore();
   });
 
-  // Opret download-link og trig download
+  // Trigger download
   exportCanvas.toBlob(blob => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
