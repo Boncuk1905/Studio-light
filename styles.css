@@ -1,110 +1,73 @@
-/* Container til billed-preview */
-#previewArea {
-  position: relative;
-  width: 600px;
-  height: 600px;
-  border: 2px solid #ccc;
-  margin: 20px auto;
-  background-color: #fff;
-  overflow: hidden;
-  user-select: none;
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  background: #f0f0f0;
 }
 
-/* Wrapper til hvert billede */
+.controls {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+#previewArea {
+  width: 800px;
+  height: 800px;
+  background-color: white;
+  border: 2px dashed #ccc;
+  position: relative;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+/* === Wrapper omkring hvert billede === */
 .image-wrapper {
   position: absolute;
-  border: 1px dashed #666;
-  box-sizing: border-box;
   cursor: move;
   user-select: none;
-  transition: box-shadow 0.2s ease;
+  box-sizing: border-box;
 }
 
-/* Marker aktivt billede - kan bruges senere */
-.image-wrapper.active {
-  box-shadow: 0 0 8px 2px rgba(0, 123, 255, 0.7);
-}
-
-/* Resize håndtag (nederst højre hjørne) */
-.resize-handle {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background-color: #555;
-  border-radius: 3px;
-  right: 0;
-  bottom: 0;
-  cursor: se-resize;
-  user-select: none;
-  box-shadow: 0 0 4px rgba(0,0,0,0.4);
-}
-
-/* Selve billedet inde i wrapper */
-.main-image {
-  display: block;
+/* === Selve billedet === */
+.image-wrapper img.main-image {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  display: block;
   pointer-events: none;
   user-select: none;
 }
 
-/* Midterlinjer i previewArea */
+/* === Resize-håndtag === */
+.resize-handle {
+  width: 10px;
+  height: 10px;
+  background: #000;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+  z-index: 2;
+}
+
+/* === Midterlinjer === */
 .guide-line {
   position: absolute;
-  background-color: rgba(255, 0, 0, 0.4);
-  pointer-events: none;
-  z-index: 10;
+  background: red;
+  z-index: 1;
 }
 
 .guide-line.vertical {
-  width: 2px;
-  top: 0;
-  bottom: 0;
+  width: 1px;
+  height: 100%;
   left: 50%;
-  transform: translateX(-50%);
+  top: 0;
 }
 
 .guide-line.horizontal {
-  height: 2px;
-  left: 0;
-  right: 0;
+  height: 1px;
+  width: 100%;
   top: 50%;
-  transform: translateY(-50%);
-}
-
-/* Knapper og inputs */
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  margin: 6px 4px 6px 0;
-  font-size: 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-input[type="file"],
-input[type="color"],
-input[type="range"],
-select {
-  margin: 6px 4px;
-  padding: 4px 8px;
-  font-size: 14px;
-}
-
-label {
-  font-size: 14px;
-  user-select: none;
-  margin-right: 8px;
-}
-
-input[type="checkbox"] {
-  margin-right: 6px;
-  vertical-align: middle;
+  left: 0;
 }
