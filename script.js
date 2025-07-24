@@ -278,6 +278,53 @@ function render() {
   images.forEach(imgObj => {
     const { wrapper, img, x, y, width, height, rotation, scaleX, scaleY, mirror, intensity } = imgObj;
 
+    // ✅ START DEBUG INFO
+    let debugBox = wrapper.querySelector('.debug-box');
+    if (!debugBox) {
+      debugBox = document.createElement('div');
+      debugBox.className = 'debug-box';
+      debugBox.style.position = 'absolute';
+      debugBox.style.top = '0';
+      debugBox.style.left = '0';
+      debugBox.style.background = 'rgba(0,0,0,0.6)';
+      debugBox.style.color = 'lime';
+      debugBox.style.fontSize = '10px';
+      debugBox.style.padding = '2px 4px';
+      debugBox.style.pointerEvents = 'none';
+      debugBox.style.zIndex = '10000';
+      wrapper.appendChild(debugBox);
+    }
+
+    debugBox.innerText =
+      `x:${x}, y:${y}
+w:${width}, h:${height}
+rot:${rotation}
+sX:${scaleX}, sY:${scaleY}
+mirror:${mirror}
+bright:${intensity}`;
+
+    // Farvekoder som hjælper visuelt
+    wrapper.style.border = mirror ? '2px dashed orange' : '1px solid lime';
+    wrapper.style.outline = rotation !== 0 ? '1px dotted red' : 'none';
+    img.style.boxShadow = `0 0 ${10 * (1 - intensity)}px ${intensity < 0.5 ? 'red' : 'cyan'}`;
+
+    // Console-debug
+    console.group(`🔍 Debug for billede`);
+    console.log("Wrapper element:", wrapper);
+    console.log("Image element:", img);
+    console.log(`Position: (${x}, ${y})`);
+    console.log(`Size: ${width}x${height}`);
+    console.log(`Rotation: ${rotation}`);
+    console.log(`Scale: (${scaleX}, ${scaleY})`);
+    console.log(`Mirror: ${mirror}`);
+    console.log(`Brightness: ${intensity}`);
+    console.groupEnd();
+
+    // Conditional breakpoint (kun hvis noget er usædvanligt)
+    if (width === 0 || height === 0) debugger;
+
+    // ✅ SLUT DEBUG INFO
+
     // Opdater wrapper position og størrelse
     wrapper.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`;
     wrapper.style.width = width + 'px';
@@ -288,11 +335,7 @@ function render() {
     img.style.height = '100%';
 
     // Håndter spejling horisontalt
-    if (mirror) {
-      img.style.transform = 'scaleX(-1)';
-    } else {
-      img.style.transform = 'none';
-    }
+    img.style.transform = mirror ? 'scaleX(-1)' : 'none';
 
     // Juster intensiteten som brightness filter
     img.style.filter = `brightness(${intensity})`;
@@ -300,6 +343,7 @@ function render() {
 
   updateGuides();
 }
+
 
 // ==== Opdater midterlinjer ====
 function updateGuides() {
@@ -360,6 +404,30 @@ function exportLayout() {
   const scaleYFactor = height / previewRect.height;
 
   images.forEach(imgObj => {
+    let debugBox = wrapper.querySelector('.debug-box');
+if (!debugBox) {
+  debugBox = document.createElement('div');
+  debugBox.className = 'debug-box';
+  debugBox.style.position = 'absolute';
+  debugBox.style.top = '0';
+  debugBox.style.left = '0';
+  debugBox.style.background = 'rgba(0,0,0,0.6)';
+  debugBox.style.color = 'lime';
+  debugBox.style.fontSize = '10px';
+  debugBox.style.padding = '2px 4px';
+  debugBox.style.pointerEvents = 'none';
+  debugBox.style.zIndex = '10000';
+  wrapper.appendChild(debugBox);
+}
+
+debugBox.innerText =
+  `x:${x}, y:${y}
+w:${width}, h:${height}
+rot:${rotation}
+sX:${scaleX}, sY:${scaleY}
+mirror:${mirror}
+bright:${intensity}`;
+
     const { img, x, y, width: w, height: h, scaleX, scaleY, rotation, mirror, intensity } = imgObj;
 
     ctx.save();
